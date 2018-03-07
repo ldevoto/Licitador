@@ -1,18 +1,22 @@
 from sys import argv as sysargv, exit as sysexit
-from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, QAbstractItemView, QTableWidgetItem, QFrame
+from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, QAbstractItemView, QTableWidgetItem, QFrame, QGroupBox
 from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator
 from PyQt5.QtCore import Qt, QModelIndex, QMimeData
 from clases import Empresa, Contrato
 
 
 class DialogoEmpresa(QDialog):
-    def __init__(self, parent=None, empresa=None):
+    def __init__(self, parent=None, empresa=None, id_sugerido=None, universo_empresas=[]):
         super().__init__(parent)
         self.dibujar_IU()
         self.empresa = empresa
+        self.universo_empresas = universo_empresas
         if self.empresa != None:
             self.cargar_empresa()
             self.setWindowTitle("Modificación de Empresa")
+            self.id.setFocus()
+        elif id_sugerido != None:
+            self.id.setText(str(id_sugerido))
             self.id.setFocus()
     
     def dibujar_IU(self):
@@ -26,7 +30,7 @@ class DialogoEmpresa(QDialog):
         self.recursos_financieros = QLineEdit()
         self.contratos = QTableWidget(0, 2)
         self.cantidad_contratos = QLabel("0")
-        self.total_valor_contratos = QLabel("$0.000")
+        self.total_valor_contratos = QLabel("0.000")
         self.id_error = QLabel("*")
         self.nombre_error = QLabel("*")
         self.facturacion_media_anual_error = QLabel("*")
@@ -34,7 +38,7 @@ class DialogoEmpresa(QDialog):
         self.contratos_error = QLabel("*")
         self.espaciador = QLabel(" ")
 
-        self.id.setValidator(QIntValidator(1, 100))
+        self.id.setValidator(QIntValidator(1, 999))
         self.id.setAlignment(Qt.AlignRight)
         self.id.setMaximumWidth(100)
         self.id.textChanged.connect(self.marcar_id_erroneo)
@@ -120,8 +124,7 @@ class DialogoEmpresa(QDialog):
         grilla.addLayout(caja_botones, 4, 3)
         grilla.addLayout(caja_totales, 5, 2)
         grilla.addWidget(self.espaciador, 6, 1)
-        marco = QFrame()
-        marco.setFrameStyle(QFrame.StyledPanel)
+        marco = QGroupBox("Empresa")
         marco.setLayout(grilla)
 
         caja_horizontal = QHBoxLayout()
@@ -140,7 +143,7 @@ class DialogoEmpresa(QDialog):
     
     def accept(self):
         self.marcar_campos_erroneos()
-        if len(self.id.text()) == 0:
+        if len(self.id.text()) == 0 or self.empresa_existente(int(self.id.text())):
             self.id.setFocus()
         elif len(self.nombre.text()) == 0 or self.nombre.text().isspace():
             self.nombre.setFocus()
@@ -161,7 +164,7 @@ class DialogoEmpresa(QDialog):
         self.marcar_contratos_erroneos()
     
     def marcar_id_erroneo(self):
-        if len(self.id.text()) == 0:
+        if len(self.id.text()) == 0 or self.empresa_existente(int(self.id.text())):
             self.id_error.setVisible(True)
         else:
             self.id_error.setVisible(False)
@@ -267,7 +270,7 @@ class DialogoEmpresa(QDialog):
                 except ValueError:
                     valor_contrato = 0.00
             suma += valor_contrato
-        self.total_valor_contratos.setText("${0:.3f}".format(suma))
+        self.total_valor_contratos.setText("{0:,.3f}".format(suma))
 
     def cargar_empresa(self):
         self.id.setText(str(self.empresa.id))    
@@ -287,6 +290,10 @@ class DialogoEmpresa(QDialog):
             contrato = Contrato(int(item_anio.text()), float(item_valor.text()))
             contratos.append(contrato)
         return Empresa(int(self.id.text()), self.nombre.text(), float(self.facturacion_media_anual.text()), float(self.recursos_financieros.text()), contratos)
+    
+    def empresa_existente(self, id):
+        return any(id == empresa.id for empresa in set.union(*[set(empresa.empresas_involucradas()) for empresa in self.universo_empresas] + [set()]) if empresa != self.empresa)
+        #return any(id in empresa.ids_involucrados() for empresa in set(self.universo_empresas).difference(set([self.empresa])))
 
     
 if __name__ == '__main__':

@@ -1,20 +1,25 @@
 from sys import argv as sysargv, exit as sysexit
-from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame
+from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, QGroupBox
 from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator
 from PyQt5.QtCore import Qt, QModelIndex, QMimeData
 from clases import Asociacion, Empresa, Contrato
 from dialogo_empresa import DialogoEmpresa
+from widgets_ocultos import QTableWidgetItemEmpresa
 
 
 class DialogoAsociacion(QDialog):
-    def __init__(self, parent=None, asociacion=None):
+    def __init__(self, parent=None, asociacion=None, id_sugerido=None, universo_empresas=[]):
         super().__init__(parent)
         self.dibujar_IU()
         self.array_empresas = []
         self.asociacion = asociacion
+        self.universo_empresas = universo_empresas
         if self.asociacion != None:
             self.cargar_asociacion()
             self.setWindowTitle("Modificación de Asociación")
+            self.id.setFocus()
+        elif id_sugerido != None:
+            self.id.setText(str(id_sugerido))
             self.id.setFocus()
     
     def dibujar_IU(self):
@@ -29,15 +34,15 @@ class DialogoAsociacion(QDialog):
         self.recursos_financieros = QLineEdit()
         self.cantidad_empresas = QLabel("0")
         self.espacio = QLabel("")
-        self.total_facturacion_media_anual = QLabel("$0.000")
-        self.total_recursos_financieros = QLabel("$0.000")
-        self.total_experiencia = QLabel("$0.000")
+        self.total_facturacion_media_anual = QLabel("0.000")
+        self.total_recursos_financieros = QLabel("0.000")
+        self.total_experiencia = QLabel("0.000")
         self.id_error = QLabel("*")
         self.nombre_error = QLabel("*")
         self.empresas_error = QLabel("*")
         self.espaciador = QLabel(" ")
 
-        self.id.setValidator(QIntValidator(1, 100))
+        self.id.setValidator(QIntValidator(1, 999))
         self.id.setAlignment(Qt.AlignRight)
         self.id.setMaximumWidth(100)
         self.id.textChanged.connect(self.marcar_id_erroneo)
@@ -119,8 +124,7 @@ class DialogoAsociacion(QDialog):
         grilla.addLayout(caja_botones, 2, 3)
         grilla.addWidget(self.espaciador, 3, 1)
         grilla.addLayout(caja_totales, 3, 2)
-        marco = QFrame()
-        marco.setFrameStyle(QFrame.StyledPanel)
+        marco = QGroupBox("Asociación")
         marco.setLayout(grilla)
 
         caja_horizontal = QHBoxLayout()
@@ -139,13 +143,13 @@ class DialogoAsociacion(QDialog):
     
     def accept(self):
         self.marcar_campos_erroneos()
-        if len(self.id.text()) == 0:
+        if len(self.id.text()) == 0 or self.empresa_existente(int(self.id.text())):
             self.id.setFocus()
         elif len(self.nombre.text()) == 0 or self.nombre.text().isspace():
             self.nombre.setFocus()
         elif self.empresas.rowCount() == 0:
             self.empresas.setFocus()
-            self.agregar_empresa()
+            #self.agregar_empresa()
         else:
             super().accept()
     
@@ -155,7 +159,7 @@ class DialogoAsociacion(QDialog):
         self.marcar_empresas_erroneas()
     
     def marcar_id_erroneo(self):
-        if len(self.id.text()) == 0:
+        if len(self.id.text()) == 0 or self.empresa_existente(int(self.id.text())):
             self.id_error.setVisible(True)
         else:
             self.id_error.setVisible(False)
@@ -173,7 +177,7 @@ class DialogoAsociacion(QDialog):
             self.empresas_error.setVisible(False)
     
     def agregar_empresa(self):
-        dialogo_empresa = DialogoEmpresa()
+        dialogo_empresa = DialogoEmpresa(parent=self, id_sugerido=self.id_sugerido(), universo_empresas=self.universo_empresas + self.array_empresas)
         if dialogo_empresa.exec() == QDialog.Accepted:
             empresa = dialogo_empresa.obtener_empresa()
             self.cargar_linea_empresa(self.empresas.rowCount())
@@ -209,9 +213,9 @@ class DialogoAsociacion(QDialog):
 
         item_id.setText(str(empresa.id))
         item_nombre.setText(empresa.nombre)
-        item_facturacion_media_anual.setText("{0:.3f}".format(empresa.facturacion_media_anual()))
-        item_recursos_financieros.setText("{0:.3f}".format(empresa.recursos_financieros()))
-        item_experiencia.setText("{0:.3f}".format(sum(contrato.valor for contrato in empresa.contratos())))
+        item_facturacion_media_anual.setText("{0:,.3f}".format(empresa.facturacion_media_anual()))
+        item_recursos_financieros.setText("{0:,.3f}".format(empresa.recursos_financieros()))
+        item_experiencia.setText("{0:,.3f}".format(sum(contrato.valor for contrato in empresa.contratos())))
         item_empresa.empresa = empresa
         self.actualizar_totales()
 
@@ -225,7 +229,7 @@ class DialogoAsociacion(QDialog):
     def editar_empresa(self):
         if self.empresas.rowCount() != 0:
             empresa = self.empresas.item(self.empresas.currentRow(), 5).empresa
-            dialogo_empresa = DialogoEmpresa(empresa=empresa)
+            dialogo_empresa = DialogoEmpresa(parent=self, empresa=empresa, universo_empresas=self.universo_empresas + self.array_empresas)
             if dialogo_empresa.exec() == QDialog.Accepted:
                 self.array_empresas.remove(empresa)
                 empresa = dialogo_empresa.obtener_empresa()
@@ -243,6 +247,11 @@ class DialogoAsociacion(QDialog):
         suma_facturacion_media_anual = 0.00
         suma_recursos_financieros = 0.00
         suma_experiencia = 0.00
+        for empresa in self.array_empresas:
+            suma_facturacion_media_anual += empresa.facturacion_media_anual()
+            suma_recursos_financieros += empresa.recursos_financieros()
+            suma_experiencia += sum(contrato.valor for contrato in empresa.contratos())
+        '''
         for fila in range(0, self.empresas.rowCount()):
             if self.empresas.item(fila, 2) == None:
                 valor_facturacion_media_anual = 0.00
@@ -271,9 +280,10 @@ class DialogoAsociacion(QDialog):
             suma_facturacion_media_anual += valor_facturacion_media_anual
             suma_recursos_financieros += valor_recursos_financieros
             suma_experiencia += valor_experiencia
-        self.total_facturacion_media_anual.setText("${0:.3f}".format(suma_facturacion_media_anual))
-        self.total_recursos_financieros.setText("${0:.3f}".format(suma_recursos_financieros))
-        self.total_experiencia.setText("${0:.3f}".format(suma_experiencia))
+        '''
+        self.total_facturacion_media_anual.setText("{0:,.3f}".format(suma_facturacion_media_anual))
+        self.total_recursos_financieros.setText("{0:,.3f}".format(suma_recursos_financieros))
+        self.total_experiencia.setText("{0:,.3f}".format(suma_experiencia))
 
     def cargar_asociacion(self):
         self.id.setText(str(self.asociacion.id))
@@ -286,12 +296,19 @@ class DialogoAsociacion(QDialog):
 
     def obtener_asociacion(self):
         return Asociacion(int(self.id.text()),self.nombre.text(), self.array_empresas)
+    
+    def id_sugerido(self):
+        id = None
+        for i in range(100,1000):
+            if all(i != empresa.id for empresa in set.union(*[set(empresa.empresas_involucradas()) for empresa in self.universo_empresas + self.array_empresas] + [set()])):
+            #if all(i not in empresa.ids_involucrados() for empresa in self.universo_empresas + self.array_empresas):
+                id = i
+                break
+        return id
 
-
-class QTableWidgetItemEmpresa(QTableWidgetItem):
-    def __init__(self, empresa):
-        super().__init__()
-        self.empresa = empresa
+    def empresa_existente(self, id):
+        return any(id == empresa.id for empresa in set.union(*[set(empresa.empresas_involucradas()) for empresa in self.universo_empresas + self.array_empresas] + [set()]) if empresa != self.asociacion)
+        #return any(id in empresa.ids_involucrados() for empresa in set(self.universo_empresas + self.array_empresas).difference(set([self.asociacion])))
 
 
 if __name__ == '__main__':

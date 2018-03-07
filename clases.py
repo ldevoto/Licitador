@@ -102,6 +102,12 @@ class Entidad:
         return (self.cumple_facturacion_media_anual(posibilidad.facturacion_media_anual())
         and self.cumple_recursos_financieros(posibilidad.recursos_financieros()) 
         and self.cumple_experiencia(posibilidad))
+    
+    def empresas_involucradas(self):
+        return [self]
+    
+    def es_asociacion(self):
+        return False
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -197,6 +203,12 @@ class Asociacion(Entidad):
 
     def cumple_recursos_financieros_un_socio(self, recursos_financieros):
         return any(socio.cumple_recursos_financieros(recursos_financieros * 0.4) for socio in self.socios)
+    
+    def empresas_involucradas(self):
+        return [self] + self.socios
+    
+    def es_asociacion(self):
+        return True
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------

@@ -1,17 +1,22 @@
 from sys import argv as sysargv, exit as sysexit
-from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, QStyle, QLabel, QGridLayout, QFrame
+from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, 
+                            QHBoxLayout, QStyle, QLabel, QGridLayout, QFrame, QGroupBox)
 from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator
 from PyQt5.QtCore import Qt
 from clases import Lote
 
 class DialogoLote(QDialog):
-    def __init__(self, parent=None, lote=None):
+    def __init__(self, parent=None, lote=None, id_sugerido=None, universo_lotes=[]):
         super().__init__(parent)
         self.dibujar_IU()
         self.lote = lote
+        self.universo_lotes = universo_lotes
         if self.lote != None:
             self.cargar_lote()
             self.setWindowTitle("Modificación de Lote")
+            self.id.setFocus()
+        elif id_sugerido != None:
+            self.id.setText(str(id_sugerido))
             self.id.setFocus()
     
     def dibujar_IU(self):
@@ -19,6 +24,7 @@ class DialogoLote(QDialog):
         self.setWindowModality(Qt.ApplicationModal)
         self.setSizeGripEnabled(False)
         self.setContentsMargins(10, 10, 10, 10)
+
         self.id = QLineEdit()
         self.descripcion = QLineEdit()
         self.facturacion_media_anual = QLineEdit()
@@ -101,8 +107,7 @@ class DialogoLote(QDialog):
         grilla.addWidget(QLabel("Experiencia"), 4, 0)
         grilla.addWidget(self.experiencia_error, 4, 1, Qt.AlignTop)
         grilla.addWidget(self.experiencia, 4, 2)
-        marco = QFrame()
-        marco.setFrameStyle(QFrame.StyledPanel)
+        marco = QGroupBox("Lote")
         marco.setLayout(grilla)
 
         formulario = QFormLayout(self)
@@ -113,7 +118,7 @@ class DialogoLote(QDialog):
     
     def accept(self):
         self.marcar_campos_erroneos()
-        if len(self.id.text()) == 0:
+        if len(self.id.text()) == 0 or self.lote_existente(int(self.id.text())):
             #self.id.setStyleSheet("QLineEdit { border-color: red; border-style: solid; border-width: 1px}")
             self.id.setFocus()
         elif len(self.facturacion_media_anual.text()) == 0:
@@ -132,7 +137,7 @@ class DialogoLote(QDialog):
         self.marcar_experiencia_erronea()
     
     def marcar_id_erroneo(self):
-        if len(self.id.text()) == 0:
+        if len(self.id.text()) == 0 or self.lote_existente(int(self.id.text())):
             self.id_error.setVisible(True)
         else:
             self.id_error.setVisible(False)
@@ -167,6 +172,9 @@ class DialogoLote(QDialog):
         if len(self.descripcion.text()) != 0:
             lote.descripcion = self.descripcion.text()
         return lote
+    
+    def lote_existente(self, id):
+        return any(lote.id == id for lote in set(self.universo_lotes).difference(set([self.lote])))
 
     
 if __name__ == '__main__':
