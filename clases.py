@@ -1,4 +1,4 @@
-from operator import itemgetter, attrgetter
+from operator import itemgetter, attrgetter, methodcaller
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -103,9 +103,13 @@ class Entidad:
         and self.cumple_recursos_financieros(posibilidad.recursos_financieros()) 
         and self.cumple_experiencia(posibilidad))
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def empresas_involucradas(self):
         return [self]
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def es_asociacion(self):
         return False
 
@@ -204,9 +208,13 @@ class Asociacion(Entidad):
     def cumple_recursos_financieros_un_socio(self, recursos_financieros):
         return any(socio.cumple_recursos_financieros(recursos_financieros * 0.4) for socio in self.socios)
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def empresas_involucradas(self):
         return [self] + self.socios
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def es_asociacion(self):
         return True
 
@@ -291,6 +299,11 @@ class Oferta:
         self.empresa = empresa
         self.lote = lote
         self.valor = valor
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def es_equivalente(self, oferta):
+        return (self.lote == oferta.lote and self.empresa == oferta.empresa)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -321,6 +334,11 @@ class ConjuntoOfertas:
 
     def oferta_contenida(self, oferta):
         return oferta in self.ofertas
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def oferta_existente(self, oferta):
+        return any(oferta.es_equivalente(oferta1) for oferta1 in self.ofertas)
 
     def lote_contenido(self, lote):
         return lote in self.lotes_ofertados()
@@ -339,6 +357,11 @@ class ConjuntoOfertas:
 
     def es_igual(self, conjunto_ofertas):
         return self.ofertas == conjunto_ofertas.ofertas
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def es_equivalente(self, conjunto_ofertas):
+        return self.cantidad_ofertas() == conjunto_ofertas.cantidad_ofertas() and all(any(oferta1.es_equivalente(oferta) for oferta in self.ofertas) for oferta1 in conjunto_ofertas.ofertas)
 
     def contiene(self, conjunto_ofertas):
         return self.ofertas.issuperset(conjunto_ofertas.ofertas)
@@ -361,7 +384,8 @@ Metodos:
 
 '''
 class Adicional:
-    def __init__(self, conjunto_ofertas, porcentaje):
+    def __init__(self, empresa, conjunto_ofertas, porcentaje):
+        self.empresa = empresa
         self.conjunto_ofertas = conjunto_ofertas
         self.porcentaje = porcentaje
 
@@ -374,6 +398,9 @@ class Adicional:
         else:
             valor = 0.0
         return valor
+    
+    def es_equivalente(self, adicional):
+        return (self.conjunto_ofertas.es_equivalente(adicional.conjunto_ofertas))
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -496,7 +523,7 @@ class Licitador:
     
     def iniciar_licitacion(self):
         self.calcular_posibilidades_empresas()
-        self.calcular_combinaciones(self)
+        self.calcular_combinaciones()
     
     def calcular_posibilidades_empresas(self):
         for empresa in self.empresas:
@@ -509,7 +536,7 @@ class Licitador:
         empresas_usadas = set()
         for empresa in empresas:
             empresas_usadas.add(empresa)
-            for posibilidad in empresa.posibilidad:
+            for posibilidad in empresa.posibilidades:
                 if combinacion.acepta_posibilidad(posibilidad):
                     combinacion_clonada = combinacion.clonar()
                     combinacion_clonada.agregar_posibilidad(posibilidad)
@@ -525,10 +552,10 @@ class Licitador:
         self.combinaciones = combinacion
     
     def ordenar_combinaciones(self):
-        self.combinaciones = sorted(self.combinaciones, key=itemgetter("valor_con_adicional"))
+        self.combinaciones = sorted(self.combinaciones, key=methodcaller("valor_con_adicional"))
     
     def combinacion_ganadora(self):
-        return min(self.combinaciones, key=itemgetter("valor_con_adicional"))
+        return min(self.combinaciones, key=methodcaller("valor_con_adicional"))
     
     def guardar_licitacion(self, nombre_licitacion):
         pass

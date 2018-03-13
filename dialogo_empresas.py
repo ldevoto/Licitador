@@ -1,4 +1,5 @@
 from sys import argv as sysargv, exit as sysexit
+from operator import itemgetter, attrgetter
 from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, 
                              QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, 
                              QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, 
@@ -6,6 +7,7 @@ from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPus
 from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator
 from PyQt5.QtCore import Qt, QModelIndex, QMimeData
 from clases import Asociacion, Empresa, Contrato, Lote
+from widgets_ocultos import Estados
 from dialogo_empresa import DialogoEmpresa
 from dialogo_asociacion import DialogoAsociacion
 from widgets_ocultos import QTableWidgetItemEmpresa
@@ -13,6 +15,7 @@ from widgets_ocultos import QTableWidgetItemEmpresa
 class DialogoEmpresas(QDialog):
     def __init__(self, parent=None, empresas=None):
         super().__init__(parent=parent)
+        self.estado = Estados.E_INDETERMINADO
         self.dibujar_IU()
         self.array_empresas = []
         self.array_empresas_a_cargar = empresas
@@ -21,6 +24,7 @@ class DialogoEmpresas(QDialog):
             if self.empresas.rowCount() != 0:
                 self.empresas.setFocus()
                 self.empresas.setCurrentItem(self.empresas.item(0, 0))
+        self.orden_anterior = {"columna":0, "orden":Qt.AscendingOrder}
 
     def dibujar_IU(self):
         self.setWindowTitle("Ingreso de Empresas")
@@ -39,6 +43,7 @@ class DialogoEmpresas(QDialog):
         self.empresas.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
         self.empresas.horizontalHeader().hideSection(7)
         self.empresas.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.empresas.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.empresas.resizeColumnsToContents()
         self.empresas.setColumnWidth(0, self.empresas.columnWidth(0) + 10)
         self.empresas.setColumnWidth(1, self.empresas.columnWidth(1) + 150)
@@ -90,7 +95,7 @@ class DialogoEmpresas(QDialog):
         grilla = QGridLayout()
         grilla.setColumnMinimumWidth(1, 20)
         #grilla.addWidget(QLabel("Lotes"), 0, 0, Qt.AlignTop)
-        grilla.addWidget(self.empresas_error, 0, 1, Qt.AlignTop)
+        grilla.addWidget(self.empresas_error, 0, 1, Qt.AlignTop | Qt.AlignRight)
         grilla.addWidget(self.empresas, 0, 2)
         grilla.addLayout(caja_botones, 0, 3)
         grilla.addWidget(self.espaciador, 1, 1)
@@ -118,9 +123,11 @@ class DialogoEmpresas(QDialog):
         if self.empresas.rowCount() == 0:
             self.empresas.setFocus()
         else:
+            self.estado = Estados.E_CONTINUAR
             self.accept()
     
     def retroceder(self):
+        self.estado = Estados.E_RETROCEDER
         self.accept()
     
     #Es para evitar que se cierre el Dilog con la tecla ESC
@@ -150,24 +157,21 @@ class DialogoEmpresas(QDialog):
             dialogo_empresa = DialogoEmpresa(parent=self, id_sugerido=self.id_sugerido(), universo_empresas=self.array_empresas)
             if dialogo_empresa.exec() == QDialog.Accepted:
                 empresa = dialogo_empresa.obtener_empresa()
-                #self.empresas.setSortingEnabled(False)
                 self.cargar_linea_empresa(self.empresas.rowCount())
                 self.cargar_datos_empresa(self.empresas.rowCount() - 1, empresa)
-                #self.empresas.setSortingEnabled(True)
                 self.empresas.setFocus()
                 self.empresas.setCurrentItem(self.empresas.item(self.empresas.rowCount() -1, 0))
         elif mensaje.clickedButton() == boton_asociacion:
             dialogo_asociacion = DialogoAsociacion(parent=self, id_sugerido=self.id_sugerido(), universo_empresas=self.array_empresas)
             if dialogo_asociacion.exec() == QDialog.Accepted:
                 empresa = dialogo_asociacion.obtener_asociacion()
-                #self.empresas.setSortingEnabled(False)
                 self.cargar_linea_empresa(self.empresas.rowCount())
                 self.cargar_datos_empresa(self.empresas.rowCount() - 1, empresa)
-                #self.empresas.setSortingEnabled(True)
                 self.empresas.setFocus()
                 self.empresas.setCurrentItem(self.empresas.item(self.empresas.rowCount() -1, 0))
         
     def cargar_linea_empresa(self, fila):
+        #self.empresas.setSortingEnabled(False)
         self.empresas.insertRow(fila)
         item_id = QTableWidgetItem()
         item_nombre = QTableWidgetItem()
@@ -188,6 +192,7 @@ class DialogoEmpresas(QDialog):
         self.empresas.setItem(fila, 5, item_experiencia)
         self.empresas.setItem(fila, 6, item_cantidad_contratos)
         self.empresas.setItem(fila, 7, item_empresa)
+        #self.empresas.setSortingEnabled(True)
     
     def cargar_datos_empresa(self, fila, empresa):
         self.array_empresas.append(empresa)
@@ -236,8 +241,7 @@ class DialogoEmpresas(QDialog):
                     self.array_empresas.remove(empresa)
                     empresa = dialogo_empresa.obtener_empresa()
                     self.cargar_datos_empresa(self.empresas.currentRow(), empresa)
-            
-
+    
     def actualizar_totales(self):
         self.actualizar_cantidad_empresas()
     
@@ -256,11 +260,12 @@ class DialogoEmpresas(QDialog):
         self.empresas.setCurrentItem(self.empresas.item(self.empresas.rowCount()-1, 0))
 
     def obtener_empresas(self):
-        return self.array_empresas
+        return sorted(self.array_empresas, key=attrgetter("id"))
     
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Salir', "Está a punto de salir.\nEstá seguro que desea salir?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
+            self.estado = Estados.E_SALIR
             event.accept()
         else:
             event.ignore()
@@ -272,6 +277,9 @@ class DialogoEmpresas(QDialog):
                 id = i
                 break
         return id
+    
+    def obtener_estado(self):
+        return self.estado
 
 
 if __name__ == '__main__':

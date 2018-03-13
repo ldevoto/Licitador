@@ -1,7 +1,8 @@
 from sys import argv as sysargv, exit as sysexit
 from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, 
-                            QHBoxLayout, QStyle, QLabel, QGridLayout, QFrame, QGroupBox)
-from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator
+                            QHBoxLayout, QStyle, QLabel, QGridLayout, QFrame, QGroupBox,
+                            QShortcut)
+from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence
 from PyQt5.QtCore import Qt
 from clases import Lote
 
@@ -17,6 +18,7 @@ class DialogoLote(QDialog):
             self.id.setFocus()
         elif id_sugerido != None:
             self.id.setText(str(id_sugerido))
+            self.descripcion.setText("Lote {0}".format(id_sugerido))
             self.id.setFocus()
     
     def dibujar_IU(self):
@@ -93,19 +95,19 @@ class DialogoLote(QDialog):
         grilla = QGridLayout()
         grilla.setColumnMinimumWidth(1, 20)
         grilla.addWidget(QLabel("Id"), 0, 0)
-        grilla.addWidget(self.id_error, 0, 1, Qt.AlignTop)
+        grilla.addWidget(self.id_error, 0, 1, Qt.AlignTop | Qt.AlignRight)
         grilla.addWidget(self.id, 0, 2)
         grilla.addWidget(QLabel("Descripción"), 1, 0)
         grilla.addWidget(self.espaciador, 1, 1)
         grilla.addWidget(self.descripcion, 1, 2)
         grilla.addWidget(QLabel("Facturación Media Anual"), 2, 0)
-        grilla.addWidget(self.facturacion_media_anual_error, 2, 1, Qt.AlignTop)
+        grilla.addWidget(self.facturacion_media_anual_error, 2, 1, Qt.AlignTop | Qt.AlignRight)
         grilla.addWidget(self.facturacion_media_anual, 2, 2)
         grilla.addWidget(QLabel("Recursos Financieros"), 3, 0)
-        grilla.addWidget(self.recursos_financieros_error, 3, 1, Qt.AlignTop)
+        grilla.addWidget(self.recursos_financieros_error, 3, 1, Qt.AlignTop | Qt.AlignRight)
         grilla.addWidget(self.recursos_financieros, 3, 2)
         grilla.addWidget(QLabel("Experiencia"), 4, 0)
-        grilla.addWidget(self.experiencia_error, 4, 1, Qt.AlignTop)
+        grilla.addWidget(self.experiencia_error, 4, 1, Qt.AlignTop | Qt.AlignRight)
         grilla.addWidget(self.experiencia, 4, 2)
         marco = QGroupBox("Lote")
         marco.setLayout(grilla)
@@ -170,7 +172,7 @@ class DialogoLote(QDialog):
     def obtener_lote(self):
         lote = Lote(int(self.id.text()), float(self.facturacion_media_anual.text()), float(self.recursos_financieros.text()), float(self.experiencia.text()))
         if len(self.descripcion.text()) != 0:
-            lote.descripcion = self.descripcion.text()
+            lote.descripcion = self.descripcion.text().strip()
         return lote
     
     def lote_existente(self, id):

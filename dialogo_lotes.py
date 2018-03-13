@@ -1,4 +1,5 @@
 from sys import argv as sysargv, exit as sysexit
+from operator import itemgetter, attrgetter
 from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, 
                              QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, 
                              QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, 
@@ -7,11 +8,12 @@ from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator
 from PyQt5.QtCore import Qt, QModelIndex, QMimeData
 from clases import Asociacion, Empresa, Contrato, Lote
 from dialogo_lote import DialogoLote
-from widgets_ocultos import QTableWidgetItemLote
+from widgets_ocultos import QTableWidgetItemLote, Estados
 
 class DialogoLotes(QDialog):
     def __init__(self, parent=None, lotes=None):
         super().__init__(parent=parent)
+        self.estado = Estados.E_INDETERMINADO
         self.dibujar_IU()
         self.array_lotes = []
         self.array_lotes_a_cargar = lotes
@@ -38,6 +40,7 @@ class DialogoLotes(QDialog):
         self.lotes.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
         self.lotes.horizontalHeader().hideSection(5)
         self.lotes.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.lotes.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.lotes.resizeColumnsToContents()
         self.lotes.setColumnWidth(0, self.lotes.columnWidth(0) + 10)
         self.lotes.setColumnWidth(1, self.lotes.columnWidth(1) + 150)
@@ -89,7 +92,7 @@ class DialogoLotes(QDialog):
         grilla = QGridLayout()
         grilla.setColumnMinimumWidth(1, 20)
         #grilla.addWidget(QLabel("Lotes"), 0, 0, Qt.AlignTop)
-        grilla.addWidget(self.lotes_error, 0, 1, Qt.AlignTop)
+        grilla.addWidget(self.lotes_error, 0, 1, Qt.AlignTop | Qt.AlignRight)
         grilla.addWidget(self.lotes, 0, 2)
         grilla.addLayout(caja_botones, 0, 3)
         grilla.addWidget(self.espaciador, 1, 1)
@@ -116,9 +119,11 @@ class DialogoLotes(QDialog):
         if self.lotes.rowCount() == 0:
             self.lotes.setFocus()
         else:
+            self.estado = Estados.E_CONTINUAR
             self.accept()
     
     def retroceder(self):
+        self.estado = Estados.E_RETROCEDER
         self.accept()
     
     #Es para evitar que se cierre el Dilog con la tecla ESC
@@ -212,11 +217,12 @@ class DialogoLotes(QDialog):
         self.lotes.setCurrentItem(self.lotes.item(self.lotes.rowCount()-1, 0))
 
     def obtener_lotes(self):
-        return self.array_lotes
+        return sorted(self.array_lotes, key=attrgetter("id"))
     
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Salir', "Está a punto de salir.\nEstá seguro que desea salir?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
+            self.estado = Estados.E_SALIR
             event.accept()
         else:
             event.ignore()
@@ -228,6 +234,9 @@ class DialogoLotes(QDialog):
                 id = i
                 break
         return id
+
+    def obtener_estado(self):
+        return self.estado
 
 
 if __name__ == '__main__':
