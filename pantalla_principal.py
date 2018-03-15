@@ -1,16 +1,20 @@
 from sys import argv as sysargv, exit as sysexit
+from time import sleep
+from threading import Thread
 from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, 
                              QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, 
                              QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, 
                              QMainWindow, QWidget, QLayout, QMessageBox, QGroupBox, QShortcut)
 from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence
 from PyQt5.QtCore import Qt, QModelIndex, QMimeData
-from clases import Asociacion, Empresa, Contrato, Licitador
+from clases import Asociacion, Empresa, Contrato, Combinacion, Licitador
 from widgets_ocultos import Estados
 from dialogo_empresas import DialogoEmpresas
 from dialogo_lotes import DialogoLotes
 from dialogo_ofertas import DialogoOfertas
 from dialogo_adicionales import DialogoAdicionales
+from dialogo_cargando import DialogoCargando
+from dialogo_datos import DialogoDatos
 
 
 class PantallaPrincipal(QDialog):
@@ -23,6 +27,7 @@ class PantallaPrincipal(QDialog):
         super().__init__()
         self.dibujar_IU()
         self.accion = PantallaPrincipal.A_INDEFINIDO
+        self.nombre_licitacion = ""
 
     def dibujar_IU(self):
         self.setWindowTitle("LicitaSoft")
@@ -55,12 +60,21 @@ class PantallaPrincipal(QDialog):
         self.resize(self.sizeHint() * 2)
     
     def crear_nueva_licitacion(self):
-        self.accion = PantallaPrincipal.A_CREAR
-        self.accept()
+        dialogo_datos = DialogoDatos(self)
+        if dialogo_datos.exec() == QDialog.Accepted:
+            self.nombre_licitacion = dialogo_datos.obtener_nombre_licitacion()
+            self.accion = PantallaPrincipal.A_CREAR
+            self.accept()
     
     def cargar_licitacion_preexistente(self):
-        self.accion = PantallaPrincipal.A_CARGAR
-        self.accept()
+        dialogo_datos = DialogoDatos(self)
+        if dialogo_datos.exec() == QDialog.Accepted:
+            self.nombre_licitacion = dialogo_datos.obtener_nombre_licitacion()
+            self.accion = PantallaPrincipal.A_CARGAR
+            self.accept()
+    
+    def obtener_nombre_licitacion(self):
+        return self.nombre_licitacion
     
     def obtener_accion(self):
         return self.accion
@@ -78,18 +92,32 @@ class PantallaPrincipal(QDialog):
             event.ignore()
 
 
-def obtener_empresas():
-    dialogo_empresas = DialogoEmpresas()
-    while dialogo_empresas.exec() == QDialog.Accepted:
-        empresas = dialogo_empresas.obtener_empresas()
-        print(empresas.count())
-        if dialogo_empresas.obtener_estado() == Estados.E_CONTINUAR:
-            return empresas
-    exit()
+class ThreadLicitador(Thread):
+    def __init__(self, licitador, dialogo):
+        super().__init__()
+        self.dialogo = dialogo
+        self.licitador = licitador
+    
+    def run(self):
+        sleep(0.2)
+        self.dialogo.setear_texto("Generando Posibilidades de oferta para cada empresa...")
+        self.licitador.calcular_posibilidades_empresas()
+        sleep(3)
+        self.dialogo.setear_texto("Calculando combinaciones posibles...")
+        self.licitador.calcular_combinaciones()
+        sleep(3)
+        self.dialogo.setear_texto("Reduciendo el número de combinaciones...")
+        self.licitador.reducir_combinaciones()
+        sleep(3)
+        self.dialogo.setear_texto("Ordenando combinaciones según valor...")
+        self.licitador.ordenar_combinaciones()
+        sleep(3)
+        self.dialogo.mostrar_boton_confirmar()
 
 
-def crear_objeto_licitador(lotes, empresas, ofertas, adicionales):
-    licitador = Licitador()
+
+def crear_objeto_licitador(nombre_licitacion, lotes, empresas, ofertas, adicionales):
+    licitador = Licitador(nombre_licitacion)
     for oferta in ofertas:
         oferta.empresa.conjunto_ofertas.agregar_oferta(oferta)
     for adicional in adicionales:
@@ -100,7 +128,20 @@ def crear_objeto_licitador(lotes, empresas, ofertas, adicionales):
         licitador.agregar_empresa(empresa)
     return licitador
 
-def crear_nueva_licitacion():
+def obtener_listas_de_licitador(licitador, lotes, empresas, ofertas, adicionales):
+    lotes = licitador.lotes
+    for empresa in licitador.empresas:
+        if empresa.es_asociacioni():
+            asociacion = Asociacion(empresa.id, empresa.nombre, [])
+            empresas.append(asociacion)
+            for socio in empresa.socios:
+                asociacion.socios.append(Empresa(socio.id, socio.nombre, socio.facturacion_media_anual(), socio.recursos_financieros(), socio.contratos()))
+        else:
+            empresas.append(Empresa(empresa.id, empresa.nombre, empresa.facturacion_media_anual(), empresa.recursos_financieros(), empresa.contratos()))
+        for ofertas in empresa.conjunto_ofertas.ofertas():
+            ofertas.append(oferta)
+
+def crear_nueva_licitacion(nombre_licitacion):
     lotes = []
     empresas = []
     ofertas = []
@@ -213,13 +254,16 @@ def crear_nueva_licitacion():
             exit()
     else:
         print("Esta todo listo para empezar la licitación!")
-        licitador = crear_objeto_licitador(lotes, empresas, ofertas, adicionales)
+        licitador = crear_objeto_licitador(nombre_licitacion, lotes, empresas, ofertas, adicionales)
     return licitador
 
 
 
-def cargar_licitacion_preexistente():
-    pass
+def cargar_licitacion_preexistente(nombre_licitacion):
+    licitacion = Licitador(nombre_licitacion)
+    licitacion.cargar_licitacion()
+
+    return licitacion
 
 
 if __name__ == '__main__':
@@ -229,7 +273,12 @@ if __name__ == '__main__':
         accion = pantalla_principal.obtener_accion()
         if accion == PantallaPrincipal.A_CREAR:
             print("Crear")
-            licitador = crear_nueva_licitacion()
+            licitador = crear_nueva_licitacion(pantalla_principal.obtener_nombre_licitacion())
+            Combinacion.maxima = 0
+            if licitador == None:
+                continue
+            else:
+                licitador.guardar_licitacion()
             '''
             for empresa in licitador.empresas:
                 print()
@@ -253,7 +302,9 @@ if __name__ == '__main__':
                 print(lote.descripcion)
             '''
             dialogo_cargando = DialogoCargando()
-            licitador.iniciar_licitacion()
+            thread = ThreadLicitador(licitador, dialogo_cargando)
+            thread.start()
+            dialogo_cargando.exec()
             ganador = licitador.combinacion_ganadora()
             print("------------GANADORRRRR--------------")
             print(ganador.valor_con_adicional())
@@ -264,8 +315,46 @@ if __name__ == '__main__':
                     print(oferta.valor)
         elif accion == PantallaPrincipal.A_CARGAR:
             print("Cargar")
-            cargar_licitacion_preexistente()
-            pass
+            licitador = cargar_licitacion_preexistente(pantalla_principal.obtener_nombre_licitacion())
+            Combinacion.maxima = 0
+            if licitador == None:
+                continue
+            #else:
+                #licitador.guardar_licitacion()
+            '''
+            for empresa in licitador.empresas:
+                print()
+                print("-----------Empresa---------------")
+                print(empresa.id)
+                print(empresa.nombre)
+                print("Ofertas:")
+                for oferta in empresa.conjunto_ofertas.ofertas:
+                    print(oferta.lote.id)
+                    print(oferta.valor)
+                print("Adicionales:")
+                for adicional in empresa.adicionales:
+                    if type(adicional).__name__ != "AdicionalNulo":
+                        print(adicional.porcentaje)
+                        print("Conjunto ofertas:")
+                        for oferta in adicional.conjunto_ofertas.ofertas:
+                            print(oferta.lote.id)
+            print("-------------Lotes----------------")
+            for lote in licitador.lotes:
+                print(lote.id)
+                print(lote.descripcion)
+            '''
+            dialogo_cargando = DialogoCargando()
+            thread = ThreadLicitador(licitador, dialogo_cargando)
+            thread.start()
+            dialogo_cargando.exec()
+            ganador = licitador.combinacion_ganadora()
+            print("------------GANADORRRRR--------------")
+            print(ganador.valor_con_adicional())
+            for posibilidad in ganador.posibilidades:
+                print(posibilidad.empresa.nombre)
+                for oferta in posibilidad.conjunto_ofertas.ofertas:
+                    print(oferta.lote.id)
+                    print(oferta.valor)
         else:
             pass
         pantalla_principal = PantallaPrincipal()

@@ -231,12 +231,21 @@ class DialogoAdicionales(QDialog):
 
     def normalizar_adicionales(self):
         adicionales_a_eliminar = set()
+        ofertas_a_cambiar = []
         for adicional in self.array_adicionales_a_cargar:
             for oferta in adicional.conjunto_ofertas.ofertas:
                 if oferta not in self.array_ofertas:
+                    adicionales_a_eliminar.add(adicional)
+                    break
+                '''
                     if (oferta.lote.id, oferta.empresa.id) not in [(oferta1.lote.id, oferta1.empresa.id) for oferta1 in self.array_ofertas]:
                         adicionales_a_eliminar.add(adicional)
                         break
+                    else:
+                        for oferta1 in self.array_ofertas:
+                            if oferta.lote.id == oferta1.lote.id and oferta.empresa.id == oferta1.empresa.id:
+                                ofertas_a_cambiar.append({"oferta_vieja":oferta, "oferta_nueva":oferta1})
+                                break
             if all(empresa != adicional.empresa for empresa in self.array_empresas):
                 if all(empresa.id != adicional.empresa.id for empresa in self.array_empresas):
                     adicionales_a_eliminar.add(adicional)
@@ -245,18 +254,11 @@ class DialogoAdicionales(QDialog):
                     for empresa in self.array_empresas:
                         if empresa.id == adicional.empresa.id:
                             adicional.empresa = empresa
-                            for oferta in adicional.conjunto_ofertas.ofertas:
-                                oferta.empresa = empresa
                             break
-            for oferta in adicional.conjunto_ofertas.ofertas:
-                if any(oferta.lote.id == oferta1.lote.id for oferta1 in self.array_ofertas):
-                    for oferta_del_array in self.array_ofertas:
-                        if oferta.lote.id == oferta_del_array.lote.id:
-                            if oferta.lote != oferta_del_array.lote:
-                                oferta.lote = oferta_del_array.lote
-                else:
-                    adicionales_a_eliminar.add(adicional)
-                    continue
+            for cambios in ofertas_a_cambiar:
+                adicional.conjunto_ofertas.quitar_oferta(cambios["oferta_vieja"])
+                adicional.conjunto_ofertas.agregar_oferta(cambios["oferta_nueva"])
+            '''
         for adicional in adicionales_a_eliminar:
             self.array_adicionales_a_cargar.remove(adicional)
 

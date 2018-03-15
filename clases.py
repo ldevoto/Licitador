@@ -1,4 +1,6 @@
 from operator import itemgetter, attrgetter, methodcaller
+import persistencia 
+#from persistencia import guardar_licitacion, cargar_licitacion, db_existente
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -7,7 +9,25 @@ Descripcion:
     Clase encargada de almacenar toda la informacion de un lote a licitar
 Atributos:
     id                         |    *   Id único del lote
-    descripcion                |        Descripcion del lote
+    desc
+
+This is a circular dependency. It can be solved without any structural modifications to the code. The problem occurs because in vector you demand that entity be made available for use immediately, and vice versa. The reason for this problem is that you asking to access the contents of the module before it is ready -- by using from x import y. This is essentially the same as
+
+import x
+y = x.y
+del x
+
+Python is able to detect circular dependencies and prevent the infinite loop of imports. Essentially all that happens is that an empty placeholder is created for the module (ie. it has no content). Once the circularly dependent modules are compiled it updates the imported module. This is works something like this.
+
+a = module() # import a
+
+# rest of module
+
+a.update_contents(real_a)
+
+For python to be able to work with circular dependencies you must use import x style only.
+
+ripcion                |        Descripcion del lote
     facturacion_media_anual    |    *   Facturacion media anual requerida para licitar este lote
     recursos_financieros       |    *   Recursos financieros requeridos para licitar este lote
     experiencia                |    *   Experiencia en término de valores de contratos anteriores requerida para licitar este lote
@@ -20,7 +40,10 @@ class Lote:
         self.facturacion_media_anual = facturacion_media_anual
         self.recursos_financieros = recursos_financieros
         self.experiencia = experiencia 
-
+    
+    def to_registro(self):
+        return (self.id, self.descripcion, self.facturacion_media_anual, self.recursos_financieros, self.experiencia)
+    
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -112,6 +135,12 @@ class Entidad:
     #++++++++++++++++++
     def es_asociacion(self):
         return False
+
+    def to_registro(self):
+        return self.to_registro_sin_padre() + (None, )
+    
+    def to_registro_sin_padre(self):
+        return (self.id, self.nombre, self.facturacion_media_anual(), self.recursos_financieros())
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -217,6 +246,13 @@ class Asociacion(Entidad):
     #++++++++++++++++++
     def es_asociacion(self):
         return True
+    
+    def to_registro_sin_padre(self):
+        return (self.id, self.nombre, None, None)
+
+    
+    def empresas_to_registro(self):
+        return [socio.to_registro_sin_padre() + (self.id, ) for socio in self.socios]
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -304,6 +340,9 @@ class Oferta:
     #++++++++++++++++++
     def es_equivalente(self, oferta):
         return (self.lote == oferta.lote and self.empresa == oferta.empresa)
+    
+    def to_registro(self):
+        return (self.empresa.id, self.lote.id, self.valor)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -373,6 +412,9 @@ class ConjuntoOfertas:
         conjunto_ofertas = ConjuntoOfertas()
         conjunto_ofertas.ofertas = set(self.ofertas)
         return conjunto_ofertas
+    
+    def to_registro(self):
+        return [(oferta.id,) for oferta in self.ofertas]
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -401,6 +443,12 @@ class Adicional:
     
     def es_equivalente(self, adicional):
         return (self.conjunto_ofertas.es_equivalente(adicional.conjunto_ofertas))
+    
+    def to_registro(self):
+        return (self.empresa.id, self.porcentaje)
+    
+    def es_nulo(self):
+        return False
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -421,6 +469,8 @@ class AdicionalNulo:
     def valor(self, posibilidad):
         return 0.0
 
+    def es_nulo(self):
+        return True
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -434,6 +484,9 @@ class Contrato:
     def __init__(self, anio, valor):
         self.anio = anio
         self.valor = valor
+    
+    def to_registro(self):
+        return (self.anio, self.valor)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -507,7 +560,8 @@ Atributos:
 Metodos: 
 '''
 class Licitador:
-    def __init__(self):
+    def __init__(self, nombre):
+        self.nombre = nombre
         self.lotes = []
         self.empresas = set()
         self.combinaciones = []
@@ -549,7 +603,7 @@ class Licitador:
         for combinacion in self.combinaciones:
             if combinacion.es_maxima():
                 combinaciones.append(combinacion)
-        self.combinaciones = combinacion
+        self.combinaciones = combinaciones
     
     def ordenar_combinaciones(self):
         self.combinaciones = sorted(self.combinaciones, key=methodcaller("valor_con_adicional"))
@@ -557,11 +611,11 @@ class Licitador:
     def combinacion_ganadora(self):
         return min(self.combinaciones, key=methodcaller("valor_con_adicional"))
     
-    def guardar_licitacion(self, nombre_licitacion):
-        pass
+    def guardar_licitacion(self):
+        print(persistencia.guardar_licitacion("Licitaciones.db", self))
     
-    def cargar_licitacion(self, nombre_licitacion):
-        pass
+    def cargar_licitacion(self):
+        print(persistencia.cargar_licitacion("Licitaciones.db", self))
 
 
 

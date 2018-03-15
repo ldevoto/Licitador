@@ -123,8 +123,16 @@ class DialogoLotes(QDialog):
             self.accept()
     
     def retroceder(self):
-        self.estado = Estados.E_RETROCEDER
-        self.accept()
+        mensaje = QMessageBox(self)
+        mensaje.setWindowTitle("Volver al Menú Pricipal")
+        mensaje.setText("Está seguro que desea volver al Menú Principal y cancelar la carga de datos?\nSi continúa perderá todos los datos ingresados")
+        boton_si = mensaje.addButton("Si", QMessageBox.YesRole)
+        boton_no = mensaje.addButton("No", QMessageBox.NoRole)
+        mensaje.setDefaultButton(boton_no)
+        mensaje.exec()
+        if mensaje.clickedButton() == boton_si:
+            self.estado = Estados.E_RETROCEDER
+            self.accept()
     
     #Es para evitar que se cierre el Dilog con la tecla ESC
     def reject(self):
