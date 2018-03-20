@@ -22,7 +22,7 @@ class DialogoAdicionales(QDialog):
         self.array_adicionales_a_cargar = adicionales
         self.dibujar_IU()
         if self.array_adicionales_a_cargar != None:
-            self.array_adicionales_a_cargar = sorted(adicionales, key=attrgetter("empresa.id"))
+            self.array_adicionales_a_cargar = adicionales
             self.cargar_adicionales()
             if self.adicionales.rowCount() != 0:
                 self.adicionales.setFocus()
@@ -130,8 +130,16 @@ class DialogoAdicionales(QDialog):
         #if self.adicionales.rowCount() == 0:
         #    self.adicionales.setFocus()
         #else:
-        self.estado = Estados.E_CONTINUAR
-        self.accept()
+        mensaje = QMessageBox(self)
+        mensaje.setWindowTitle("Comenzar Licitación")
+        mensaje.setText("Está a punto de comenzar con los cálculos para determinar la mejor combinación.\nSe recomienda verificar los datos ingresados antes de continuar.\n\nDesea continuar?")
+        boton_si = mensaje.addButton("Si", QMessageBox.YesRole)
+        boton_no = mensaje.addButton("No", QMessageBox.NoRole)
+        mensaje.setDefaultButton(boton_no)
+        mensaje.exec()
+        if mensaje.clickedButton() == boton_si:
+            self.estado = Estados.E_CONTINUAR
+            self.accept()
     
     def retroceder(self):
         self.estado = Estados.E_RETROCEDER
@@ -197,7 +205,9 @@ class DialogoAdicionales(QDialog):
 
     def eliminar_adicional(self):
         if self.adicionales.rowCount() != 0:
-            self.array_adicionales.remove(self.adicionales.item(self.adicionales.currentRow(), 2).data(1))
+            adicional = self.adicionales.item(self.adicionales.currentRow(), 2).data(1)
+            adicional.eliminar()
+            self.array_adicionales.remove(adicional)
             self.adicionales.removeRow(self.adicionales.currentRow())
         self.marcar_ofertas_erroneas()
         self.actualizar_totales()
@@ -207,8 +217,11 @@ class DialogoAdicionales(QDialog):
             adicional = self.adicionales.item(self.adicionales.currentRow(), 2).data(1)
             dialogo_adicional = DialogoAdicional(parent=self, adicional=adicional, lotes=self.array_lotes, empresas=self.array_empresas, ofertas=self.array_ofertas, adicionales=self.array_adicionales)
             if dialogo_adicional.exec() == QDialog.Accepted:
+                adicional_nuevo = dialogo_adicional.obtener_adicional()
+                adicional.editar_de(adicional_nuevo)
+                adicional_nuevo.eliminar()
+                #adicional_nuevo.asignar_empresa(adicional.empresa)
                 self.array_adicionales.remove(adicional)
-                adicional = dialogo_adicional.obtener_adicional()
                 self.cargar_datos_adicional(self.adicionales.currentRow(), adicional)
 
     def actualizar_totales(self):
@@ -216,13 +229,14 @@ class DialogoAdicionales(QDialog):
     
     def actualizar_cantidad_adicionales(self):
         if self.adicionales.rowCount() == 1:
-            adicional = " Adicional"
+            adicional = " Descuento"
         else:
-            adicional = " Adicionales"
+            adicional = " Descuentos"
         self.cantidad_adicionales.setText(str(self.adicionales.rowCount()) + adicional)
 
     def cargar_adicionales(self):
         self.normalizar_adicionales()
+        self.array_adicionales_a_cargar = sorted(self.array_adicionales_a_cargar, key=attrgetter("empresa.id"))
         for adicional in self.array_adicionales_a_cargar:
             self.cargar_linea_adicional(self.adicionales.rowCount())
             self.cargar_datos_adicional(self.adicionales.rowCount() - 1, adicional)
@@ -233,33 +247,18 @@ class DialogoAdicionales(QDialog):
         adicionales_a_eliminar = set()
         ofertas_a_cambiar = []
         for adicional in self.array_adicionales_a_cargar:
+            if adicional.empresa == None:
+                adicionales_a_eliminar.add(adicional)
+                continue
             for oferta in adicional.conjunto_ofertas.ofertas:
                 if oferta not in self.array_ofertas:
                     adicionales_a_eliminar.add(adicional)
                     break
-                '''
-                    if (oferta.lote.id, oferta.empresa.id) not in [(oferta1.lote.id, oferta1.empresa.id) for oferta1 in self.array_ofertas]:
-                        adicionales_a_eliminar.add(adicional)
-                        break
-                    else:
-                        for oferta1 in self.array_ofertas:
-                            if oferta.lote.id == oferta1.lote.id and oferta.empresa.id == oferta1.empresa.id:
-                                ofertas_a_cambiar.append({"oferta_vieja":oferta, "oferta_nueva":oferta1})
-                                break
-            if all(empresa != adicional.empresa for empresa in self.array_empresas):
-                if all(empresa.id != adicional.empresa.id for empresa in self.array_empresas):
+                if oferta.empresa != adicional.empresa:
                     adicionales_a_eliminar.add(adicional)
-                    continue
-                else:
-                    for empresa in self.array_empresas:
-                        if empresa.id == adicional.empresa.id:
-                            adicional.empresa = empresa
-                            break
-            for cambios in ofertas_a_cambiar:
-                adicional.conjunto_ofertas.quitar_oferta(cambios["oferta_vieja"])
-                adicional.conjunto_ofertas.agregar_oferta(cambios["oferta_nueva"])
-            '''
+                    break
         for adicional in adicionales_a_eliminar:
+            adicional.eliminar()
             self.array_adicionales_a_cargar.remove(adicional)
 
     def obtener_adicionales(self):

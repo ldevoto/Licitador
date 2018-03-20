@@ -150,10 +150,10 @@ class DialogoOferta(QDialog):
         return Oferta(self.empresa.currentData(), self.lote.currentData(), float(self.valor.text()))
     
     def oferta_existente(self):
-        if self.oferta != None and self.oferta.es_equivalente(Oferta(self.empresa.currentData(), self.lote.currentData(), 0.00)):
+        if self.oferta != None and self.oferta.es_equivalente(Oferta(self.empresa.currentData(), self.lote.currentData(), 0.00, efectiva=False)):
             return False
         else:
-            return self.conjunto_ofertas.oferta_existente(Oferta(self.empresa.currentData(), self.lote.currentData(), 0.00))
+            return self.conjunto_ofertas.oferta_existente(Oferta(self.empresa.currentData(), self.lote.currentData(), 0.00, efectiva=False))
 
     
 if __name__ == '__main__':

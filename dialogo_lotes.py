@@ -202,8 +202,9 @@ class DialogoLotes(QDialog):
             lote = self.lotes.item(self.lotes.currentRow(), 5).lote
             dialogo_lote = DialogoLote(parent=self, lote=lote, universo_lotes=self.array_lotes)
             if dialogo_lote.exec() == QDialog.Accepted:
+                lote_nuevo = dialogo_lote.obtener_lote()
+                lote.editar_de(lote_nuevo)
                 self.array_lotes.remove(lote)
-                lote = dialogo_lote.obtener_lote()
                 self.cargar_datos_lote(self.lotes.currentRow(), lote)
             
 

@@ -161,7 +161,7 @@ class DialogoAdicional(QDialog):
         return any(self.adicional_temporal().es_equivalente(adicional) for adicional in self.array_adicionales if (self.adicional == None) or (self.adicional != None and not adicional.es_equivalente(self.adicional)))
     
     def adicional_temporal(self):
-        return Adicional(self.empresa.currentData(), self.conjunto_ofertas(), 0.00)
+        return Adicional(self.empresa.currentData(), self.conjunto_ofertas(), 0.00, efectiva=False)
     
     def conjunto_ofertas(self):
         conjunto_ofertas = ConjuntoOfertas()

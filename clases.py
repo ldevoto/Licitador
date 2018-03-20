@@ -9,25 +9,7 @@ Descripcion:
     Clase encargada de almacenar toda la informacion de un lote a licitar
 Atributos:
     id                         |    *   Id único del lote
-    desc
-
-This is a circular dependency. It can be solved without any structural modifications to the code. The problem occurs because in vector you demand that entity be made available for use immediately, and vice versa. The reason for this problem is that you asking to access the contents of the module before it is ready -- by using from x import y. This is essentially the same as
-
-import x
-y = x.y
-del x
-
-Python is able to detect circular dependencies and prevent the infinite loop of imports. Essentially all that happens is that an empty placeholder is created for the module (ie. it has no content). Once the circularly dependent modules are compiled it updates the imported module. This is works something like this.
-
-a = module() # import a
-
-# rest of module
-
-a.update_contents(real_a)
-
-For python to be able to work with circular dependencies you must use import x style only.
-
-ripcion                |        Descripcion del lote
+    descripcion                |        Descripcion del lote
     facturacion_media_anual    |    *   Facturacion media anual requerida para licitar este lote
     recursos_financieros       |    *   Recursos financieros requeridos para licitar este lote
     experiencia                |    *   Experiencia en término de valores de contratos anteriores requerida para licitar este lote
@@ -41,9 +23,30 @@ class Lote:
         self.recursos_financieros = recursos_financieros
         self.experiencia = experiencia 
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro(self):
         return (self.id, self.descripcion, self.facturacion_media_anual, self.recursos_financieros, self.experiencia)
     
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar(self, id, descripcion, facturacion_media_anual, recursos_financieros, experiencia):
+        self.id = id
+        self.descripcion = descripcion
+        self.facturacion_media_anual = facturacion_media_anual
+        self.recursos_financieros = recursos_financieros
+        self.experiencia = experiencia
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar_de(self, lote):
+        self.editar(lote.id, lote.descripcion, lote.facturacion_media_anual, lote.recursos_financieros, lote.experiencia)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def to_json(self):
+        return '{{\n  "id" : {0},\n  "descripcion" : "{1}",\n  "facturacion_media_anual" : {2:.3f},\n  "recursos_financieros" : {3:.3f},\n  "experiencia" : {4:.3f}\n}}'.format(self.id, self.descripcion, self.facturacion_media_anual, self.recursos_financieros, self.experiencia)
+
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -67,11 +70,89 @@ class Entidad:
         self.adicionales = [AdicionalNulo()]
         self.posibilidades = []
 
+    #++++++++++++++++++
+    #++++++++++++++++++
     def agregar_adicional(self, adicional):
-        self.adicionales.append(adicional)
+        if not self.posee_adicional(adicional):
+            self.adicionales.append(adicional)
+        if not adicional.es_de_empresa(self):
+            adicional.asignar_empresa(self)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def quitar_adicional(self, adicional):
+        if self.posee_adicional(adicional):
+            self.adicionales.remove(adicional)
+        if adicional.es_de_empresa(self):
+            adicional.desasignar_empresa(self)
+        
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def agregar_oferta(self, oferta):
+        if not self.posee_oferta(oferta):
+            self.conjunto_ofertas.agregar_oferta(oferta)
+        if not oferta.es_de_empresa(self):
+            oferta.asignar_empresa(self)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def quitar_oferta(self, oferta):
+        if self.posee_oferta(oferta):
+            self.conjunto_ofertas.quitar_oferta(oferta)
+        if oferta.es_de_empresa(self):
+            oferta.desasignar_empresa(self)
 
-    def asignar_conjunto_ofertas(self, conjunto_ofertas):
-        self.conjunto_ofertas = conjunto_ofertas
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def agregar_conjunto_ofertas(self, conjunto_ofertas):
+        for oferta in conjunto_ofertas.ofertas:
+            self.agregar_oferta(oferta)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def quitar_conjunto_ofertas(self, conjunto_ofertas):
+        for oferta in conjunto_ofertas.ofertas:
+            self.quitar_oferta(oferta)
+        
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def quitar_todas_las_ofertas(self):
+        ofertas = list(self.conjunto_ofertas.ofertas)
+        for oferta in ofertas:
+            self.quitar_oferta(oferta)
+        
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def quitar_todos_los_adicionales(self):
+        adicionales = [adicional for adicional in self.adicionales if not adicional.es_nulo()]
+        for adicional in adicionales:
+            self.quitar_adicional(adicional)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def posee_oferta(self, oferta):
+        return self.conjunto_ofertas.oferta_contenida(oferta)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def posee_adicional(self, adicional):
+        return adicional in self.adicionales
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def pasar_ofertas_y_adicionales_a_empresa(self, empresa):
+        ofertas = list(self.conjunto_ofertas.ofertas)
+        for oferta in ofertas:
+            oferta.asignar_empresa(empresa)
+        adicionales = [adicional for adicional in self.adicionales if not adicional.es_nulo()]
+        for adicional in adicionales:
+            adicional.asignar_empresa(empresa)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def eliminar(self):
+        self.quitar_todas_las_ofertas()
+        self.quitar_todos_los_adicionales()
 
     def calcular_posibilidades(self):
         for adicional in self.adicionales:
@@ -109,6 +190,7 @@ class Entidad:
     def experiencia(self, posibilidad):
         if self.contratos():
             return sum(contrato.valor for contrato in self.contratos()[:posibilidad.cantidad_lotes_ofertados() + 1])
+            #return sum(contrato.valor for contrato in self.contratos())
         else:
             return 0.0
 
@@ -136,12 +218,22 @@ class Entidad:
     def es_asociacion(self):
         return False
 
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro(self):
         return self.to_registro_sin_padre() + (None, )
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro_sin_padre(self):
         return (self.id, self.nombre, self.facturacion_media_anual(), self.recursos_financieros())
-
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar(self, id, nombre):
+        self.id = id
+        self.nombre = nombre
+    
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -173,8 +265,30 @@ class Empresa(Entidad):
 
     def contratos(self):
         return self._contratos
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar(self, id, nombre, facturacion_media_anual, recursos_financieros, contratos):
+        super().editar(id, nombre)
+        self._facturacion_media_anual = facturacion_media_anual
+        self._recursos_financieros = recursos_financieros
+        self._contratos = contratos
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar_de(self, empresa):
+        self.editar(empresa.id, empresa.nombre, empresa.facturacion_media_anual(), empresa.recursos_financieros(), empresa.contratos())
 
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def to_json(self):
+        json = ""
+        for contrato in self.contratos():
+            json += "    " + contrato.to_json().replace("\n", "\n    ") + ",\n"
+        json = json[:-2:]
+        return '{{\n  "id" : {0},\n  "nombre" : "{1}",\n  "facturacion_media_anual" : {2:.3f},\n  "recursos_financieros" : {3:.3f},\n  "contratos" : \n  [\n{4}\n  ]\n}}'.format(self.id, self.nombre, self.facturacion_media_anual(), self.recursos_financieros(), json)
 
+    
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
 '''
@@ -200,7 +314,7 @@ class Asociacion(Entidad):
         return sum(socio.recursos_financieros() for socio in self.socios)
 
     def contratos(self):
-        return list(set.union(*[set(socio.contratos()) for socio in self.socios]))
+        return sorted(list(set.union(*[set(socio.contratos()) for socio in self.socios])), key=attrgetter("valor"), reverse=True)
 
     def cumple_facturacion_media_anual(self, facturacion_media_anual):
         return (super(Asociacion, self).cumple_facturacion_media_anual(facturacion_media_anual)
@@ -247,12 +361,35 @@ class Asociacion(Entidad):
     def es_asociacion(self):
         return True
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro_sin_padre(self):
         return (self.id, self.nombre, None, None)
 
-    
+    #++++++++++++++++++
+    #++++++++++++++++++
     def empresas_to_registro(self):
         return [socio.to_registro_sin_padre() + (self.id, ) for socio in self.socios]
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar(self, id, nombre, socios):
+        super().editar(id, nombre)
+        self.socios = socios
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar_de(self, asociacion):
+        self.editar(asociacion.id, asociacion.nombre, asociacion.socios)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def to_json(self):
+        json = ""
+        for socio in self.socios:
+            json += "    " + socio.to_json().replace("\n", "\n    ") + ",\n"
+        json = json[:-2:]
+        return '{{\n  "id" : {0},\n  "nombre" : "{1}",\n  "socios" : \n  [\n{2}\n  ]\n}}'.format(self.id, self.nombre, json)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -317,6 +454,15 @@ class Posibilidad:
         posibilidad = Posibilidad(self.empresa, self.adicional)
         posibilidad.conjunto_ofertas = self.conjunto_ofertas.clonar()
         return posibilidad
+    
+    def to_json(self, con_valores=True):
+        json_ofertas = self.conjunto_ofertas.to_json().replace("\n", "\n    ")
+        json_adicional = self.adicional.to_json().replace("\n", "\n    ")
+        if con_valores:
+            return '{{\n  "empresa" : {0},\n  "valor" : {1:.3f},\n  "valor_con_adicional" : {2:.3f},\n  "ofertas" :\n    {3},\n  "adicional" : \n    {4}\n}}'.format(self.empresa.id, self.valor(), self.valor_con_adicional(), json_ofertas, json_adicional)
+        else:
+            return '{{\n  "empresa" : {0},\n  "ofertas" :\n    {1},\n  "adicional" : \n    {2}\n}}'.format(self.empresa.id, json_ofertas, json_adicional)
+        
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -331,18 +477,70 @@ Metodos:
 
 '''
 class Oferta:
-    def __init__(self, empresa, lote, valor):
-        self.empresa = empresa
+    def __init__(self, empresa, lote, valor, efectiva=True):
+        self.empresa = None
         self.lote = lote
         self.valor = valor
+        if efectiva:
+            self.asignar_empresa(empresa)
+        else:
+            self.empresa = empresa
     
     #++++++++++++++++++
     #++++++++++++++++++
     def es_equivalente(self, oferta):
         return (self.lote == oferta.lote and self.empresa == oferta.empresa)
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro(self):
         return (self.empresa.id, self.lote.id, self.valor)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def es_de_empresa(self, empresa):
+        return self.empresa == empresa
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def asignar_empresa(self, empresa):
+        if self.empresa != empresa:
+            if self.empresa != None:
+                self.empresa.quitar_oferta(self)
+            self.empresa = empresa
+        if not empresa.posee_oferta(self):
+            empresa.agregar_oferta(self)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def desasignar_empresa(self, empresa):
+        if self.empresa == empresa:
+            self.empresa = None
+        if empresa.posee_oferta(self):
+            empresa.quitar_oferta(self)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def eliminar(self):
+        if self.empresa != None:
+            self.desasignar_empresa(self.empresa)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar(self, empresa, lote, valor):
+        self.asignar_empresa(empresa)
+        self.lote = lote
+        self.valor = valor
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar_de(self, oferta):
+        self.editar(oferta.empresa, oferta.lote, oferta.valor)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def to_json(self):
+        return '{{\n  "empresa" : {0},\n  "lote" : {1},\n  "valor" : {2:.3f}\n}}'.format(self.empresa.id, self.lote.id, self.valor)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -413,8 +611,19 @@ class ConjuntoOfertas:
         conjunto_ofertas.ofertas = set(self.ofertas)
         return conjunto_ofertas
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro(self):
         return [(oferta.id,) for oferta in self.ofertas]
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def to_json(self):
+        json = ""
+        for oferta in self.ofertas:
+            json += "  " + oferta.to_json().replace("\n", "\n  ") + ",\n"
+        json = json[:-2:]
+        return '[\n{0}\n]'.format(json)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -426,10 +635,14 @@ Metodos:
 
 '''
 class Adicional:
-    def __init__(self, empresa, conjunto_ofertas, porcentaje):
-        self.empresa = empresa
+    def __init__(self, empresa, conjunto_ofertas, porcentaje, efectiva=True):
+        self.empresa = None
         self.conjunto_ofertas = conjunto_ofertas
         self.porcentaje = porcentaje
+        if efectiva:
+            self.asignar_empresa(empresa)
+        else:
+            self.empresa = empresa
 
     def esta_completo(self, posibilidad):
         return posibilidad.conjunto_ofertas.contiene(self.conjunto_ofertas)
@@ -441,15 +654,67 @@ class Adicional:
             valor = 0.0
         return valor
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def es_equivalente(self, adicional):
         return (self.conjunto_ofertas.es_equivalente(adicional.conjunto_ofertas))
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro(self):
         return (self.empresa.id, self.porcentaje)
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def es_nulo(self):
         return False
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def asignar_empresa(self, empresa):
+        if self.empresa != empresa:
+            if self.empresa != None:
+                self.empresa.quitar_adicional(self)
+            self.empresa = empresa
+        if not empresa.posee_adicional(self):
+            empresa.agregar_adicional(self)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def desasignar_empresa(self, empresa):
+        if self.empresa == empresa:
+            self.empresa = None
+        if empresa.posee_adicional(self):
+            empresa.quitar_adicional(self)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def es_de_empresa(self, empresa):
+        return self.empresa == empresa
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def eliminar(self):
+        if self.empresa != None:
+            self.desasignar_empresa(self.empresa)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar(self, empresa, conjunto_ofertas, porcentaje):
+        self.asignar_empresa(empresa)
+        self.conjunto_ofertas = conjunto_ofertas
+        self.porcentaje = porcentaje
 
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def editar_de(self, adicional):
+        self.editar(adicional.empresa, adicional.conjunto_ofertas, adicional.porcentaje)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def to_json(self):
+        json_ofertas = self.conjunto_ofertas.to_json().replace("\n", "\n    ")
+        return '{{\n  "empresa" : {0},\n  "porcentaje" : {1:.3f},\n  "ofertas" : \n    {2}\n}}'.format(self.empresa.id, self.porcentaje, json_ofertas)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -469,8 +734,13 @@ class AdicionalNulo:
     def valor(self, posibilidad):
         return 0.0
 
+    #++++++++++++++++++
+    #++++++++++++++++++
     def es_nulo(self):
         return True
+    
+    def to_json(self):
+        return '{\n  "empresa" : null,\n  "ofertas" : null,\n  "porcentaje" : 0.000\n}'
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -485,8 +755,15 @@ class Contrato:
         self.anio = anio
         self.valor = valor
     
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro(self):
         return (self.anio, self.valor)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def to_json(self):
+        return '{{\n  "anio" : {0},\n  "valor" : {1:.3f}\n}}'.format(self.anio, self.valor)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -550,6 +827,16 @@ class Combinacion:
         combinacion = Combinacion()
         combinacion.posibilidades = list(self.posibilidades)
         return combinacion
+    
+    def to_json(self, con_valores=True):
+        json = ""
+        for posibilidad in self.posibilidades:
+            json += "      " + posibilidad.to_json().replace("\n", "\n      ") + ",\n"
+        json = json[:-2:]
+        if con_valores:
+            return '{{\n  "valor" : {0:.3f},\n  "valor_con_adicional" : {1:.3f},\n  "posibilidades" : \n    [\n{2}\n    ]\n}}'.format(self.valor(), self.valor_con_adicional(), json)
+        else:
+            return '{{\n  "posibilidades" : \n    [\n{0}\n    ]\n}}'.format(json)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------
@@ -616,6 +903,9 @@ class Licitador:
     
     def cargar_licitacion(self):
         print(persistencia.cargar_licitacion("Licitaciones.db", self))
+    
+    def sobreescribir_licitacion(self):
+        print(persistencia.guardar_licitacion("Licitaciones.db", self, sobreescribir=True))
 
 
 

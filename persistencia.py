@@ -57,14 +57,25 @@ def crear_db(nombre_db):
         cursor.close()
         conexion.close()
 
-def guardar_licitacion(nombre_db, licitacion):
+def guardar_licitacion(nombre_db, licitacion, sobreescribir=False):
     nombre_licitacion = licitacion.nombre
     lotes = licitacion.lotes
     empresas = licitacion.empresas
     guardado_exitoso = True
 
+    crear_db(nombre_db)
+
     conexion = connect(nombre_db)
     cursor = conexion.cursor()
+
+    if (sobreescribir):
+        cursor.execute("delete from licitaciones where nombre = ?", (nombre_licitacion,))
+        cursor.execute("delete from lotes where licitacion = ?", (nombre_licitacion,))
+        cursor.execute("delete from empresas where licitacion = ?", (nombre_licitacion,))
+        cursor.execute("delete from contratos where licitacion = ?", (nombre_licitacion,))
+        cursor.execute("delete from ofertas where licitacion = ?", (nombre_licitacion,))
+        cursor.execute("delete from conjunto_ofertas where licitacion = ?", (nombre_licitacion,))
+        cursor.execute("delete from adicionales where licitacion = ?", (nombre_licitacion,))
 
     licitacion_a_guardar = (nombre_licitacion, strftime("%d/%m/%Y"))
     cursor.execute("insert into licitaciones values (?, ?)", licitacion_a_guardar)
@@ -128,6 +139,8 @@ def cargar_licitacion(nombre_db, licitacion):
     empresas = []
     carga_exitosa = True
 
+    crear_db(nombre_db)
+
     conexion = connect(nombre_db)
     conexion.row_factory = Row
     cursor = conexion.cursor()
@@ -188,6 +201,48 @@ def cargar_licitacion(nombre_db, licitacion):
     cursor.close()
     conexion.close()
     return carga_exitosa
+
+
+def obtener_licitaciones(nombre_db):
+    conexion = connect(nombre_db)
+    conexion.row_factory = Row
+    cursor = conexion.cursor()
+    licitaciones = []
+    for registro in cursor.execute("select * from licitaciones order by fecha desc"):
+        licitaciones.append({"nombre":registro["nombre"], "fecha":registro["fecha"]})
+    cursor.close()
+    conexion.close()
+
+    return licitaciones
+
+def eliminar_licitacion(nombre_db, licitacion):
+    nombre_licitacion = licitacion.nombre
+    conexion = connect(nombre_db)
+    cursor = conexion.cursor()
+    cursor.execute("delete from licitaciones where nombre = ?", (nombre_licitacion,))
+    cursor.execute("delete from lotes where licitacion = ?", (nombre_licitacion,))
+    cursor.execute("delete from empresas where licitacion = ?", (nombre_licitacion,))
+    cursor.execute("delete from contratos where licitacion = ?", (nombre_licitacion,))
+    cursor.execute("delete from ofertas where licitacion = ?", (nombre_licitacion,))
+    cursor.execute("delete from conjunto_ofertas where licitacion = ?", (nombre_licitacion,))
+    cursor.execute("delete from adicionales where licitacion = ?", (nombre_licitacion,))
+
+    conexion.commit()
+    cursor.close()
+    conexion.close()
+
+
+def licitacion_existente(nombre_db, nombre_licitacion):
+    existe = False
+    conexion = connect(nombre_db)
+    cursor = conexion.cursor()
+    for registro in cursor.execute("select * from licitaciones where nombre = ?", (nombre_licitacion,)):
+        existe = True
+        break
+    cursor.close()
+    conexion.close()
+    return existe
+
 
 def consultar_datos(nombre_db):
     conexion = connect(nombre_db)

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QLineEdit, QLabel
+from PyQt5.QtWidgets import QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QLineEdit, QLabel, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
@@ -96,6 +96,16 @@ class QCheckBoxOfertaLote(QWidget):
 
     def deshabilitar(self):
         self.check_lote.setCheckable(Qt.Unchecked)
+
+class MensajeSalida(QMessageBox):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setWindowTitle("Salir")
+        self.setText("Está a punto de salir del sistema. Si lo hace, perderá toda la información no guardada.")
+        self.setInformativeText("Desea salir de todos modos?")
+        self.boton_si = self.addButton("Si", QMessageBox.YesRole)
+        self.boton_no = self.addButton("No", QMessageBox.NoRole)
+        self.setDefaultButton(self.boton_no)
 
 class Estados():
     E_CONTINUAR = 2

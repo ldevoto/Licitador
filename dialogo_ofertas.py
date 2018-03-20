@@ -183,7 +183,9 @@ class DialogoOfertas(QDialog):
 
     def eliminar_oferta(self):
         if self.ofertas.rowCount() != 0:
-            self.array_ofertas.remove(self.ofertas.item(self.ofertas.currentRow(), 3).data(1))
+            oferta = self.ofertas.item(self.ofertas.currentRow(), 3).data(1)
+            oferta.eliminar()
+            self.array_ofertas.remove(oferta)
             self.ofertas.removeRow(self.ofertas.currentRow())
         self.marcar_ofertas_erroneas()
         self.actualizar_totales()
@@ -193,8 +195,11 @@ class DialogoOfertas(QDialog):
             oferta = self.ofertas.item(self.ofertas.currentRow(), 3).data(1)
             dialogo_oferta = DialogoOferta(parent=self, oferta=oferta, lotes=self.array_lotes, empresas=self.array_empresas, conjunto_ofertas=self.obtener_conjunto_ofertas())
             if dialogo_oferta.exec() == QDialog.Accepted:
+                oferta_nueva = dialogo_oferta.obtener_oferta()
+                oferta.editar_de(oferta_nueva)
+                oferta_nueva.eliminar()
+                #oferta_nueva.asignar_empresa(oferta.empresa)
                 self.array_ofertas.remove(oferta)
-                oferta = dialogo_oferta.obtener_oferta()
                 self.cargar_datos_oferta(self.ofertas.currentRow(), oferta)
 
     def actualizar_totales(self):
@@ -219,21 +224,19 @@ class DialogoOfertas(QDialog):
         array_ofertas = []
         ofertas_a_eliminar = set()
         for oferta in self.array_ofertas_a_cargar:
-            if all(lote != oferta.lote for lote in self.array_lotes):
-                if all(lote.id != oferta.lote.id for lote in self.array_lotes):
-                    ofertas_a_eliminar.add(oferta)
-                else:
-                    for lote in self.array_lotes:
-                        if lote.id == oferta.lote.id:
-                            oferta.lote = lote
-            if all(empresa != oferta.empresa for empresa in self.array_empresas):
-                if all(empresa.id != oferta.empresa.id for empresa in self.array_empresas):
-                    ofertas_a_eliminar.add(oferta)
-                else:
-                    for empresa in self.array_empresas:
-                        if empresa.id == oferta.empresa.id:
-                            oferta.empresa = empresa
+            if oferta.empresa == None:
+                ofertas_a_eliminar.add(oferta)
+                continue
+            if all(oferta.lote != lote for lote in self.array_lotes):
+                ofertas_a_eliminar.add(oferta)
+                continue
+            #    if all(lote.id != oferta.lote.id for lote in self.array_lotes):
+            #    else:
+            #        for lote in self.array_lotes:
+            #            if lote.id == oferta.lote.id:
+            #                oferta.lote = lote
         for oferta in ofertas_a_eliminar:
+            oferta.eliminar()
             self.array_ofertas_a_cargar.remove(oferta)
 
     def obtener_ofertas(self):

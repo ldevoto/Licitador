@@ -65,9 +65,16 @@ class DialogoCargando(QDialog):
     
     def mostrar_boton_confirmar(self):
         self.texto_tiempo.setVisible(False)
-        self.animacion.gif.stop()
+        self.animacion.setVisible(False)
         self.setear_texto("Proceso terminado exitosamente en {0}\nA continuación podrá consultar los resultados finales".format(self.reloj.toString("hh:mm:ss")))
         self.boton_confirmar.setVisible(True)
+    
+    #Es para evitar que se cierre el Dilog con la tecla ESC
+    def reject(self):
+        self.close()
+
+    def closeEvent(self, event):
+        event.ignore()
 
 
     

@@ -103,7 +103,7 @@ class TestEmpresa(unittest.TestCase):
         self.conjunto_ofertas2.agregar_oferta(self.oferta1_empresa2)
         self.conjunto_ofertas2.agregar_oferta(self.oferta2_empresa2)
         self.conjunto_ofertas2.agregar_oferta(self.oferta3_empresa2)
-        self.adicional = c.Adicional(c.ConjuntoOfertas(), 100.00)
+        self.adicional = c.Adicional(self.empresa, c.ConjuntoOfertas(), 100.00)
         self.posibilidad = c.Posibilidad(self.empresa1, self.adicional)
 
     def test_atributos(self):
@@ -389,7 +389,7 @@ class TestAdicional(unittest.TestCase):
         self.conjunto_ofertas.agregar_oferta(self.oferta1)
         self.conjunto_ofertas.agregar_oferta(self.oferta2)
         self.porcentaje = -15.00
-        self.adicional = c.Adicional(self.conjunto_ofertas, self.porcentaje)
+        self.adicional = c.Adicional(self.empresa, self.conjunto_ofertas, self.porcentaje)
 
         #Datos de la empresa
         self.facturacion_media_anual = 10000.00
@@ -430,7 +430,7 @@ class TestAdicional(unittest.TestCase):
         #Datos de los Adicionales
         self.porcentaje1 = -50.00
         self.porcentaje2 = -30.00
-        self.adicional_completo = c.Adicional(self.conjunto_ofertas1, self.porcentaje1)
+        self.adicional_completo = c.Adicional(self.empresa1, self.conjunto_ofertas1, self.porcentaje1)
 
         #Datos de la posibilidad
         self.posibilidad = c.Posibilidad(self.empresa1, self.adicional_completo)
@@ -546,8 +546,8 @@ class TestPosibilidad(unittest.TestCase):
         #Datos de los Adicionales
         self.porcentaje1 = -50.00
         self.porcentaje2 = -30.00
-        self.adicional_completo = c.Adicional(self.conjunto_ofertas1, self.porcentaje1)
-        self.adicional_incompleto = c.Adicional(self.conjunto_ofertas2, self.porcentaje2)
+        self.adicional_completo = c.Adicional(self.empresa1, self.conjunto_ofertas1, self.porcentaje1)
+        self.adicional_incompleto = c.Adicional(self.empresa1, self.conjunto_ofertas2, self.porcentaje2)
 
     def test_atributos(self):
         self.assertEqual(self.posibilidad.empresa, self.empresa)
@@ -683,7 +683,7 @@ class TestCombinacion(unittest.TestCase):
         self.combinacion2 = c.Combinacion()
         self.conjunto_ofertas = c.ConjuntoOfertas()
         self.conjunto_ofertas.agregar_oferta(self.oferta1)
-        self.adicional1 = c.Adicional(self.conjunto_ofertas, -50)
+        self.adicional1 = c.Adicional(self.empresa1, self.conjunto_ofertas, -50)
 
     def test_atributos(self):
         self.combinacion1.agregar_posibilidad(self.posibilidad1)

@@ -221,6 +221,7 @@ class DialogoEmpresas(QDialog):
 
     def eliminar_empresa(self):
         if self.empresas.rowCount() != 0:
+            self.empresas.item(self.empresas.currentRow(), 7).empresa.eliminar()
             self.array_empresas.remove(self.empresas.item(self.empresas.currentRow(), 7).empresa)
             self.empresas.removeRow(self.empresas.currentRow())
         self.marcar_empresas_erroneas()
@@ -232,14 +233,20 @@ class DialogoEmpresas(QDialog):
             if empresa.es_asociacion():
                 dialogo_asociacion = DialogoAsociacion(parent=self, asociacion=empresa, universo_empresas=self.array_empresas)
                 if dialogo_asociacion.exec() == QDialog.Accepted:
+                    empresa_nueva = dialogo_asociacion.obtener_asociacion()
+                    empresa.editar_de(empresa_nueva)
+                    empresa_nueva.eliminar()
+                    #empresa.pasar_ofertas_y_adicionales_a_empresa(empresa_nueva)
                     self.array_empresas.remove(empresa)
-                    empresa = dialogo_asociacion.obtener_asociacion()
                     self.cargar_datos_empresa(self.empresas.currentRow(), empresa)
             else:
                 dialogo_empresa = DialogoEmpresa(parent=self, empresa=empresa, universo_empresas=self.array_empresas)
                 if dialogo_empresa.exec() == QDialog.Accepted:
+                    empresa_nueva = dialogo_empresa.obtener_empresa()
+                    empresa.editar_de(empresa_nueva)
+                    empresa_nueva.eliminar()
+                    #empresa.pasar_ofertas_y_adicionales_a_empresa(empresa_nueva)
                     self.array_empresas.remove(empresa)
-                    empresa = dialogo_empresa.obtener_empresa()
                     self.cargar_datos_empresa(self.empresas.currentRow(), empresa)
     
     def actualizar_totales(self):
