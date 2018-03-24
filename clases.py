@@ -25,6 +25,14 @@ class Lote:
     
     #++++++++++++++++++
     #++++++++++++++++++
+    def obtener_descripcion(self):
+        if self.descripcion != "":
+            return self.descripcion
+        else:
+            return "Lote {0}".format(self.id)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_registro(self):
         return (self.id, self.descripcion, self.facturacion_media_anual, self.recursos_financieros, self.experiencia)
     
@@ -455,6 +463,13 @@ class Posibilidad:
         posibilidad.conjunto_ofertas = self.conjunto_ofertas.clonar()
         return posibilidad
     
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def oferta_de_lote(self, lote):
+        return self.conjunto_ofertas.oferta_de_lote(lote)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_json(self, con_valores=True):
         json_ofertas = self.conjunto_ofertas.to_json().replace("\n", "\n    ")
         json_adicional = self.adicional.to_json().replace("\n", "\n    ")
@@ -574,6 +589,14 @@ class ConjuntoOfertas:
     
     #++++++++++++++++++
     #++++++++++++++++++
+    def oferta_de_lote(self, lote):
+        if self.lote_contenido(lote):
+            return [oferta for oferta in self.ofertas if oferta.lote == lote][0]
+        else:
+            None
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
     def oferta_existente(self, oferta):
         return any(oferta.es_equivalente(oferta1) for oferta1 in self.ofertas)
 
@@ -653,6 +676,16 @@ class Adicional:
         else:
             valor = 0.0
         return valor
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def oferta_de_lote(self, lote):
+        return self.conjunto_ofertas.oferta_de_lote(lote)
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def valor_en_oferta(self, oferta):
+        return oferta.valor * self.porcentaje / 100.0
     
     #++++++++++++++++++
     #++++++++++++++++++
@@ -810,6 +843,26 @@ class Combinacion:
 
     def cantidad_lotes_ofertados(self):
         return len(self.lotes_ofertados())
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def empresas_ganadoras(self):
+        return [posibilidad.empresa for posibilidad in self.posibilidades]
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def cantidad_empresas_ganadoras(self):
+        return len(self.empresas_ganadoras())
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def adicionales_aplicados(self):
+        return [posibilidad.adicional for posibilidad in self.posibilidades if not posibilidad.adicional.es_nulo()]
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def cantidadd_adicionales_aplicados(self):
+        return len(self.adicionales_aplicados())
 
     def esta_completa(self, lotes):
         return self.cantidad_ofertas() == len(lotes)
@@ -828,6 +881,16 @@ class Combinacion:
         combinacion.posibilidades = list(self.posibilidades)
         return combinacion
     
+    #++++++++++++++++++
+    #++++++++++++++++++
+    def oferta_de_lote(self, lote):
+        for posibilidad in self.posibilidades:
+            if posibilidad.lote_contenido(lote):
+                return posibilidad.oferta_de_lote(lote)
+        return None
+    
+    #++++++++++++++++++
+    #++++++++++++++++++
     def to_json(self, con_valores=True):
         json = ""
         for posibilidad in self.posibilidades:
@@ -896,7 +959,7 @@ class Licitador:
         self.combinaciones = sorted(self.combinaciones, key=methodcaller("valor_con_adicional"))
     
     def combinacion_ganadora(self):
-        return min(self.combinaciones, key=methodcaller("valor_con_adicional"))
+        return min(self.combinaciones, default=Combinacion(), key=methodcaller("valor_con_adicional"))
     
     def guardar_licitacion(self):
         print(persistencia.guardar_licitacion("Licitaciones.db", self))

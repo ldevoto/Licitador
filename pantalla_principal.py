@@ -4,8 +4,8 @@ from threading import Thread
 from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, 
                              QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, 
                              QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, 
-                             QMainWindow, QWidget, QLayout, QMessageBox, QGroupBox, QShortcut)
-from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence
+                             QMainWindow, QWidget, QLayout, QMessageBox, QGroupBox, QShortcut, QStyleFactory)
+from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence, QFont
 from PyQt5.QtCore import Qt, QModelIndex, QMimeData
 from clases import Asociacion, Empresa, Contrato, Combinacion, Licitador
 from widgets_ocultos import Estados, MensajeSalida
@@ -15,6 +15,7 @@ from dialogo_ofertas import DialogoOfertas
 from dialogo_adicionales import DialogoAdicionales
 from dialogo_cargando import DialogoCargando
 from dialogo_datos import DialogoDatos, DialogoCargaDatos
+from dialogo_resultados import DialogoResultados
 from persistencia import obtener_licitaciones, licitacion_existente, eliminar_licitacion
 from splash_screen import SplashScreen
 
@@ -294,6 +295,12 @@ def cargar_licitacion_preexistente(licitacion):
 
 if __name__ == '__main__':
     app = QApplication(sysargv)
+    #app.setAttribute(Qt.AA_NativeWindows, True)
+    #print(QStyleFactory.keys())
+    app.setStyle(QStyleFactory().create("Fusion"))
+    fuente = QFont()
+    fuente.setFamily("Cantarell")
+    app.setFont(fuente)
     pantalla_principal = PantallaPrincipal()
     splash = SplashScreen()
     splash.finish(pantalla_principal)
@@ -314,6 +321,8 @@ if __name__ == '__main__':
             ganador = licitador.combinacion_ganadora()
             print("------------GANADORRRRR--------------")
             print(ganador.to_json())
+            dialogo_resultado = DialogoResultados(licitador)
+            dialogo_resultado.exec()
         elif accion == PantallaPrincipal.A_CARGAR:
             print("Cargar")
             licitador = cargar_licitacion_preexistente(Licitador(pantalla_principal.obtener_nombre_licitacion()))
@@ -348,6 +357,8 @@ if __name__ == '__main__':
             ganador = licitador.combinacion_ganadora()
             print("------------GANADORRRRR--------------")
             print(ganador.to_json())
+            dialogo_resultado = DialogoResultados(licitador)
+            dialogo_resultado.exec()
         elif accion == PantallaPrincipal.A_ELIMINAR:
             print("eliminar")
             eliminar_licitacion("Licitaciones.db", Licitador(pantalla_principal.obtener_nombre_licitacion()))

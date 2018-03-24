@@ -5,10 +5,10 @@ from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPus
                              QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, 
                              QMainWindow, QWidget, QLayout, QMessageBox, QGroupBox, QShortcut, QStackedWidget)
 from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence
-from PyQt5.QtCore import Qt, QModelIndex, QMimeData, QLine
+from PyQt5.QtCore import Qt, QModelIndex, QMimeData, QLine, QSize
 from clases import Asociacion, Empresa, Contrato, Combinacion, Licitador
 from widgets_ocultos import Estados, MensajeSalida
-from widgets_resultados import CombinacionGanadora
+from widgets_resultados import CombinacionGanadora, Combinaciones
 
 class DialogoResultados(QDialog):
     def __init__(self, licitacion, parent=None):
@@ -17,55 +17,81 @@ class DialogoResultados(QDialog):
         self.dibujar_IU()
 
     def dibujar_IU(self):
-        #self.setWindowTitle('Resultados licitación "{0}"'.format(self.licitacion.nombre))
-        self.setWindowTitle('Resultados licitación "{0}"'.format("Hola Mundo"))
+        self.setWindowTitle('Resultados licitación "{0}"'.format(self.licitacion.nombre))
         self.setWindowModality(Qt.ApplicationModal)
         self.setSizeGripEnabled(False)
-        self.setContentsMargins(10, 10, 10, 10)
+        self.setContentsMargins(10, 0, 10, 20)
 
         self.contenedor = QHBoxLayout()
-        self.marco = QGroupBox()
-        self.marco2 = QGroupBox()
-        self.contenedor.addWidget(self.marco)
-        self.contenedor.addWidget(self.marco2)
-        #self.contenedor.addWidget(self.marco)
-        #self.contenedor.addWidget(self.marco2)
+        self.marco_control = QGroupBox()
+        self.caja_control = QVBoxLayout()
         self.boton_combinacion_ganadora = QPushButton("Combinación Ganadora")
         self.boton_todas_las_combinaciones = QPushButton("Combinaciones")
         self.boton_todas_las_posibilidades = QPushButton("Posibilidades")
         self.boton_datos = QPushButton("Datos")
-        self.boton_estadisticos = QPushButton("Estadísticos")
+        self.boton_informacion_adicional = QPushButton("Información Adicional")
         self.boton_salir = QPushButton("Terminar")
-        self.panel_control = QVBoxLayout()
-        #self.panel_control.setContentsMargins(10, 10, 10, 10)
-        self.panel_control.addWidget(self.boton_combinacion_ganadora)
-        self.panel_control.addWidget(self.boton_todas_las_combinaciones)
-        self.panel_control.addWidget(self.boton_todas_las_posibilidades)
-        self.panel_control.addWidget(self.boton_datos)
-        self.panel_control.addWidget(self.boton_estadisticos)
-        self.panel_control.addStretch(1)
-        self.panel_control.addWidget(self.boton_salir)
-        self.marco.setLayout(self.panel_control)
-
+        self.marco_vista = QGroupBox()
+        self.caja_vista = QVBoxLayout()
+        self.widget_vista = QStackedWidget()
         self.combinacion_ganadora = CombinacionGanadora(self.licitacion)
-        #self.combinaciones = Combinaciones(self.licitacion)
+        self.en_construccion = QLabel("En contruccion...")
+        self.combinaciones = Combinaciones(self.licitacion)
         #self.posibilidades = Posibilidades(self.licitacion)
         #self.datos = Datos(self.licitacion)
-        #self.estadisticos = Estadisticos(self.licitacion)
-        self.panel_vista = QVBoxLayout()
-        self.widget_vista = QStackedWidget(self.licitacion)
+        #self.informacion_adicional = InformacionAdicional(self.licitacion)
+
+        self.boton_combinacion_ganadora.clicked.connect(self.boton1_clickeado)
+        self.boton_todas_las_combinaciones.clicked.connect(self.boton2_clickeado)
+        self.boton_todas_las_posibilidades.clicked.connect(self.boton3_clickeado)
+        self.boton_datos.clicked.connect(self.boton4_clickeado)
+        self.boton_informacion_adicional.clicked.connect(self.boton5_clickeado)
+        self.boton_salir.clicked.connect(self.accept)
+
         self.widget_vista.addWidget(self.combinacion_ganadora)
-        #self.panel_vista.addWidget(self.combinaciones)
-        #self.panel_vista.addWidget(self.posibilidades)
-        #self.panel_vista.addWidget(self.datos)
-        #self.panel_vista.addWidget(self.estadisticos)
-        self.panel_vista.addWidget(self.widget_vista)
-        self.marco2.setLayout(self.panel_vista)
+        self.widget_vista.addWidget(self.combinaciones)
+        #self.widget_vista.addWidget(self.posibilidades)
+        #self.widget_vista.addWidget(self.datos)
+        #self.widget_vista.addWidget(self.informacion_adicional)
+        self.widget_vista.addWidget(self.en_construccion)
+        self.caja_vista.addWidget(self.widget_vista)
+        self.marco_vista.setLayout(self.caja_vista)
+        self.caja_control.addWidget(self.boton_combinacion_ganadora)
+        self.caja_control.addWidget(self.boton_todas_las_combinaciones)
+        #self.caja_control.addWidget(self.boton_todas_las_posibilidades)
+        #self.caja_control.addWidget(self.boton_datos)
+        #self.caja_control.addWidget(self.boton_informacion_adicional)
+        self.caja_control.addStretch(1)
+        self.caja_control.addWidget(self.boton_salir)
+        self.marco_control.setLayout(self.caja_control)
+        self.contenedor.addWidget(self.marco_control)
+        self.contenedor.addWidget(self.marco_vista)
         self.setLayout(self.contenedor)
 
-        self.setFixedSize(1300, 600)
+        self.resize(self.sizeHint() + QSize(0, 20))
+    
+    def boton1_clickeado(self):
+        self.widget_vista.setCurrentWidget(self.combinacion_ganadora)
+    
+    def boton2_clickeado(self):
+        self.widget_vista.setCurrentWidget(self.combinaciones)
+    
+    def boton3_clickeado(self):
+        self.widget_vista.setCurrentWidget(self.en_construccion)
+    
+    def boton4_clickeado(self):
+        self.widget_vista.setCurrentWidget(self.en_construccion)
+    
+    def boton5_clickeado(self):
+        self.widget_vista.setCurrentWidget(self.en_construccion)
 
 if __name__ == "__main__":
     app = QApplication(sysargv)
-    dialogo_resultado = DialogoResultados(None)
+    licitacion = Licitador("licitacion1")
+    #licitacion = Licitador("lic1")
+    licitacion.cargar_licitacion()
+    licitacion.iniciar_licitacion()
+    licitacion.reducir_combinaciones()
+    licitacion.ordenar_combinaciones()
+    dialogo_resultado = DialogoResultados(licitacion)
     dialogo_resultado.exec()
