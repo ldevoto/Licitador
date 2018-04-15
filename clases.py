@@ -672,7 +672,7 @@ class Adicional:
 
     def valor(self, posibilidad):
         if self.esta_completo(posibilidad):
-            valor = posibilidad.valor() * self.porcentaje / 100.0
+            valor = self.conjunto_ofertas.valor() * self.porcentaje / 100.0
         else:
             valor = 0.0
         return valor
@@ -915,6 +915,7 @@ class Licitador:
         self.lotes = []
         self.empresas = set()
         self.combinaciones = []
+        self.combinaciones_reducidas = []
 
     def agregar_lote(self, lote):
         self.lotes.append(lote)
@@ -953,13 +954,15 @@ class Licitador:
         for combinacion in self.combinaciones:
             if combinacion.es_maxima():
                 combinaciones.append(combinacion)
-        self.combinaciones = combinaciones
+        self.combinaciones_reducidas = combinaciones
     
     def ordenar_combinaciones(self):
+        self.combinaciones_reducidas = sorted(self.combinaciones_reducidas, key=methodcaller("valor_con_adicional"))
         self.combinaciones = sorted(self.combinaciones, key=methodcaller("valor_con_adicional"))
+        self.combinaciones = sorted(self.combinaciones, key=methodcaller("cantidad_ofertas"), reverse=True)
     
     def combinacion_ganadora(self):
-        return min(self.combinaciones, default=Combinacion(), key=methodcaller("valor_con_adicional"))
+        return min(self.combinaciones_reducidas, default=Combinacion(), key=methodcaller("valor_con_adicional"))
     
     def guardar_licitacion(self):
         print(persistencia.guardar_licitacion("Licitaciones.db", self))

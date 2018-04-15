@@ -4,10 +4,12 @@ from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPus
                              QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, 
                              QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, 
                              QMainWindow, QWidget, QLayout, QMessageBox, QGroupBox, QShortcut, QStackedWidget, QScrollArea, QSizePolicy, QCheckBox)
-from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence, QFont
-from PyQt5.QtCore import Qt, QModelIndex, QMimeData, QSize
+from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence, QFont, QClipboard, QGuiApplication
+from PyQt5.QtCore import Qt, QModelIndex, QMimeData, QSize, QEvent
 from clases import Asociacion, Empresa, Contrato, Combinacion, Licitador
 from widgets_ocultos import Estados, MensajeSalida
+from io import StringIO
+from csv import writer
 
 class QWidgetPrincipal(QWidget):
     def __init__(self, licitacion, titulo, widget_principal, parent=None):
@@ -56,10 +58,11 @@ class WidgetCombinacionGanadora(QWidget):
         self.tabla_lote.horizontalHeader().setVisible(False)
         self.tabla_lote.verticalHeader().setVisible(False)
         self.tabla_lote.setEnabled(True)
-        self.tabla_lote.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.tabla_lote.setSelectionMode(QAbstractItemView.NoSelection)
+        self.tabla_lote.setSelectionBehavior(QAbstractItemView.SelectItems)
+        self.tabla_lote.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tabla_lote.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tabla_lote.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContentsOnFirstShow)
+        self.installEventFilter(self)
         self.formulario_totales.setHorizontalSpacing(25)
         self.resizeColumnsToMaximumContent()
 
@@ -107,21 +110,21 @@ class WidgetCombinacionGanadora(QWidget):
                             item_empresa = QTableWidgetItem(oferta.empresa.nombre)
                             item_empresa.setTextAlignment(Qt.AlignCenter)
                             self.tabla_lote.setItem(1, columna, item_empresa)
-                            item_oferta = QTableWidgetItem("{0:.3f}".format(oferta.valor))
+                            item_oferta = QTableWidgetItem("{0:,.3f}".format(oferta.valor))
                             item_oferta.setTextAlignment(Qt.AlignCenter)
                             self.tabla_lote.setItem(2, columna, item_oferta)
-                            if posibilidad.adicional.es_nulo():
+                            if posibilidad.adicional.es_nulo() or not posibilidad.adicional.conjunto_ofertas.oferta_contenida(oferta):
                                 item_descuento = QTableWidgetItem("{0:.3f}%".format(0))
                                 item_descuento.setTextAlignment(Qt.AlignCenter)
                                 self.tabla_lote.setItem(3, columna, item_descuento)
-                                item_oferta_final = QTableWidgetItem("{0:.3f}".format(oferta.valor))
+                                item_oferta_final = QTableWidgetItem("{0:,.3f}".format(oferta.valor))
                                 item_oferta_final.setTextAlignment(Qt.AlignCenter)
                                 self.tabla_lote.setItem(4, columna, item_oferta_final)
                             else:
                                 item_descuento = QTableWidgetItem("{0:.2f}%".format(abs(posibilidad.adicional.porcentaje)))
                                 item_descuento.setTextAlignment(Qt.AlignCenter)
                                 self.tabla_lote.setItem(3, columna, item_descuento)
-                                item_oferta_final = QTableWidgetItem("{0:.3f}".format(oferta.valor + posibilidad.adicional.valor_en_oferta(oferta)))
+                                item_oferta_final = QTableWidgetItem("{0:,.3f}".format(oferta.valor + posibilidad.adicional.valor_en_oferta(oferta)))
                                 item_oferta_final.setTextAlignment(Qt.AlignCenter)
                                 self.tabla_lote.setItem(4, columna, item_oferta_final)
                             break
@@ -174,6 +177,29 @@ class WidgetCombinacionGanadora(QWidget):
         self.tabla_lote.setRowCount(5)
         self.tabla_empresa.setRowCount(5)
 
+    def eventFilter(self, source, event):
+        if (event.type() == QEvent.KeyPress and
+            event.matches(QKeySequence.Copy)):
+            self.copySelection()
+            return True
+        return super().eventFilter(source, event)
+    
+    def copySelection(self):
+        selection = self.tabla_lote.selectedIndexes()
+        if selection:
+            rows = sorted(index.row() for index in selection)
+            columns = sorted(index.column() for index in selection)
+            rowcount = rows[-1] - rows[0] + 1
+            colcount = columns[-1] - columns[0] + 1
+            table = [[''] * colcount for _ in range(rowcount)]
+            for index in selection:
+                row = index.row() - rows[0]
+                column = index.column() - columns[0]
+                table[row][column] = index.data()
+            stream = StringIO()
+            writer(stream, delimiter='\t').writerows(table)
+            QGuiApplication.clipboard().setText(stream.getvalue())
+
 
 class WidgetCombinaciones(QWidget):
     def __init__(self, licitacion, con_descuento, parent=None):
@@ -189,10 +215,11 @@ class WidgetCombinaciones(QWidget):
         self.tabla_combinaciones.verticalHeader().setVisible(False)
         self.tabla_combinaciones.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.tabla_combinaciones.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.tabla_combinaciones.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.tabla_combinaciones.setSelectionMode(QAbstractItemView.NoSelection)
+        self.tabla_combinaciones.setSelectionBehavior(QAbstractItemView.SelectItems)
+        self.tabla_combinaciones.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tabla_combinaciones.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tabla_combinaciones.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.installEventFilter(self)
         self.resizeColumnsToMaximumContent()
 
         self.caja_principal.addWidget(self.tabla_combinaciones)
@@ -212,14 +239,13 @@ class WidgetCombinaciones(QWidget):
         self.tabla_combinaciones.horizontalHeaderItem(1).setIcon(QIcon("iconos/toggle.png"))
         self.tabla_combinaciones.horizontalHeader().sectionClicked.connect(self.seccion_clickeada)
         self.tabla_combinaciones.cellClicked.connect(self.item_clickeado)
-        for i, combinacion in enumerate(self.licitacion.combinaciones):
+        for i, combinacion in enumerate(self.licitacion.combinaciones_reducidas):
             fila = self.tabla_combinaciones.rowCount()
             self.tabla_combinaciones.setRowCount(fila + 1)
             item_numero = QTableWidgetItem("{0}".format(i+1))
             self.tabla_combinaciones.setItem(fila, 0, item_numero)
             item_toggle = QTableWidgetItem(QIcon("iconos/toggle.png"), "")
             item_toggle.setTextAlignment(Qt.AlignCenter)
-            #item_toggle.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             item_toggle.setFlags(Qt.ItemIsEnabled)
             self.tabla_combinaciones.setItem(fila, 1, item_toggle)
             for j, lote in enumerate(self.licitacion.lotes):
@@ -284,6 +310,29 @@ class WidgetCombinaciones(QWidget):
         self.tabla_combinaciones.adjustSize()
         self.adjustSize()
     
+    def eventFilter(self, source, event):
+        if (event.type() == QEvent.KeyPress and
+            event.matches(QKeySequence.Copy)):
+            self.copySelection()
+            return True
+        return super().eventFilter(source, event)
+    
+    def copySelection(self):
+        selection = self.tabla_combinaciones.selectedIndexes()
+        if selection:
+            rows = sorted(index.row() for index in selection)
+            columns = sorted(index.column() for index in selection)
+            rowcount = rows[-1] - rows[0] + 1
+            colcount = columns[-1] - columns[0] + 1
+            table = [[''] * colcount for _ in range(rowcount)]
+            for index in selection:
+                row = index.row() - rows[0]
+                column = index.column() - columns[0]
+                table[row][column] = index.data()
+            stream = StringIO()
+            writer(stream, delimiter='\t').writerows(table)
+            QGuiApplication.clipboard().setText(stream.getvalue())
+    
 class QTableWidgetItemToggle(QTableWidgetItem):
     def __init__(self, posibilidad, oferta, item_con_descuento):
         super().__init__()
@@ -305,12 +354,18 @@ class QTableWidgetItemToggle(QTableWidgetItem):
                     self.setText("{0:,.3f}  (0.00%)".format(self.oferta.valor))
                 else:
                     self.setText("{0:,.3f}".format(self.oferta.valor))
-
             else:
                 if self.item_con_descuento.isChecked():
-                    self.setText("{0:,.3f}  ({1:.2f}%)".format(self.oferta.valor + self.posibilidad.adicional.valor_en_oferta(self.oferta), abs(self.adicional.porcentaje)))
+                    if self.adicional.conjunto_ofertas.oferta_contenida(self.oferta):
+                        self.setText("{0:,.3f}  ({1:.2f}%)".format(self.oferta.valor + self.posibilidad.adicional.valor_en_oferta(self.oferta), abs(self.adicional.porcentaje)))
+                    else:
+                        self.setText("{0:,.3f}  (0.00%)".format(self.oferta.valor))
                 else:
-                    self.setText("{0:,.3f}".format(self.oferta.valor + self.posibilidad.adicional.valor_en_oferta(self.oferta)))
+                    if self.adicional.conjunto_ofertas.oferta_contenida(self.oferta):
+                        self.setText("{0:,.3f}".format(self.oferta.valor + self.posibilidad.adicional.valor_en_oferta(self.oferta)))
+                    else:
+                        self.setText("{0:,.3f}".format(self.oferta.valor))
+                        
         else:
             self.setText(self.oferta.empresa.nombre)
     
