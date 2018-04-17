@@ -4,7 +4,7 @@ from threading import Thread
 from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPushButton, QHBoxLayout, 
                              QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, 
                              QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, 
-                             QMainWindow, QWidget, QLayout, QMessageBox, QGroupBox, QShortcut, QStyleFactory)
+                             QMainWindow, QWidget, QLayout, QMessageBox, QGroupBox, QShortcut, QStyleFactory, QFontDialog)
 from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence, QFont
 from PyQt5.QtCore import Qt, QModelIndex, QMimeData
 from clases import Asociacion, Empresa, Contrato, Combinacion, Licitador
@@ -261,7 +261,7 @@ def datos_licitacion(licitacion, lotes, empresas, ofertas, adicionales):
             print("Quiso salir al menu principal")
         else:
             print("Quiso salir!")
-            exit()
+            licitador = 1
     else:
         print("Esta todo listo para empezar la licitación!")
         licitador = crear_objeto_licitador(licitacion.nombre, lotes, empresas, ofertas, adicionales)
@@ -299,8 +299,11 @@ if __name__ == '__main__':
     #print(QStyleFactory.keys())
     app.setStyle(QStyleFactory().create("Fusion"))
     fuente = QFont()
-    fuente.setFamily("Cantarell")
+    #fuente.setFamily("Cantarell")
+    #fuente.setFamily("Candara")
+    fuente.setFamily("Lucida Console")
     app.setFont(fuente)
+    app.setWindowIcon(QIcon("iconos/auction.png"))
     pantalla_principal = PantallaPrincipal()
     splash = SplashScreen()
     splash.finish(pantalla_principal)
@@ -312,6 +315,8 @@ if __name__ == '__main__':
             Combinacion.maxima = 0
             if licitador == None:
                 continue
+            elif licitador == 1:
+                break
             else:
                 licitador.guardar_licitacion()
             dialogo_cargando = DialogoCargando()
@@ -329,6 +334,8 @@ if __name__ == '__main__':
             Combinacion.maxima = 0
             if licitador == None:
                 continue
+            elif licitador == 1:
+                break
             else:
                 mensaje = QMessageBox()
                 mensaje.setWindowTitle("Opciones de Guardado")

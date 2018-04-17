@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QDialog, QLineEdit, QFormLayout, QApplication, QPus
                              QStyle, QTableWidget, QGridLayout, QLabel, QVBoxLayout, QHeaderView, 
                              QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QFrame, 
                              QMainWindow, QWidget, QLayout, QMessageBox, QGroupBox, QShortcut, QStackedWidget)
-from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence
+from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator, QRegExpValidator, QKeySequence, QScreen, QGuiApplication
 from PyQt5.QtCore import Qt, QModelIndex, QMimeData, QLine, QSize
 from clases import Asociacion, Empresa, Contrato, Combinacion, Licitador
 from widgets_ocultos import Estados, MensajeSalida
@@ -19,7 +19,8 @@ class DialogoResultados(QDialog):
     def dibujar_IU(self):
         self.setWindowTitle('Resultados licitación "{0}"'.format(self.licitacion.nombre))
         self.setWindowModality(Qt.ApplicationModal)
-        self.setSizeGripEnabled(False)
+        self.setSizeGripEnabled(True)
+        self.setWindowState(self.windowState() | Qt.WindowMaximized)
         self.setContentsMargins(10, 0, 10, 20)
 
         self.contenedor = QHBoxLayout()
@@ -68,7 +69,6 @@ class DialogoResultados(QDialog):
         self.contenedor.addWidget(self.marco_vista)
         self.setLayout(self.contenedor)
 
-        self.resize(self.sizeHint() + QSize(0, 20))
     
     def boton1_clickeado(self):
         self.widget_vista.setCurrentWidget(self.combinacion_ganadora)
