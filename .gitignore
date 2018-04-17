@@ -1,3 +1,4 @@
-builds
 *.db
 *pycache*
+build
+dist
