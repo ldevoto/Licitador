@@ -82,6 +82,9 @@ def generar_posibilidades(posibilidad, ofertas):
                 posibilidades.append(posibilidad) #Agrega la posibilidad a la lista de posibilidades
             self.generar_posibilidades(posibilidad, ofertas - ofertas_usadas())
 ```
+
+### 3. Generación de Combinaciones por Entidad
+  - Una vez que se generaron todas las Posibilidades de oferta para cada Entidad 
   
 # Criterios de Riesgo y Selección de Oferentes
 
