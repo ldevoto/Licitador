@@ -62,25 +62,24 @@ En esta etapa ocurren todos los cálculos necesarios para determinar que combina
 La generación de Posibilidades con y sin descuento se realizan en un mismo proceso en forma recursiva. A continuación se muestra un pseudocódigo utilizado para generar dichas Posibilidad. El mismo es ejecutado una vez por cada Entidad.
 
 ```python
-#Ofertas -> 
-def generar_posibilidades():
-    for oferta in ofertas:
-        ofertas_usadas.add(oferta):
+#entidades -> Todas las entidades ingresadas
+#entidad.descuentos -> referencia a los descuentos de una entidad
+#entidad.ofertas -> referencia a las ofertas de una entidad
 
-def calcular_posibilidades(self):
-    for adicional in self.adicionales:
-        self._generar_posibilidades(Posibilidad(self, adicional), self.conjunto_ofertas.ofertas)
-
-def _generar_posibilidades(self, posibilidad, ofertas):
+def calcular_posibilidades():
+    for entidad in entidades:
+        for descuento in entidad.descuentos:
+            generar_posibilidades(new Posibilidad(descuento), entidad.ofertas) #Se instancia una posibilidad por cada descuento. (existe un descuento nulo que se cumple siempre)
+        
+def generar_posibilidades(posibilidad, ofertas):
     ofertas_usadas = set()
     for oferta in ofertas:
-        ofertas_usadas.add(oferta)
-        if posibilidad.acepta_oferta(oferta):
-            posibilidad_clonada = posibilidad.clonar()
-            posibilidad_clonada.agregar_oferta(oferta)
-            if posibilidad_clonada.adicional_completo():
-                self.posibilidades.append(posibilidad_clonada)
-            self._generar_posibilidades(posibilidad_clonada, ofertas - ofertas_usadas)
+        ofertas_usadas.add(oferta):
+        if posibilidad.acepta(oferta): #Devuelve true si la posibilidad con dicha oferta cumple con los criterios
+            posibilidad.agregar(oferta) #Agrega la oferta a la posibilidad
+            if posibilidad.adicional_completo(): #Devuelve true si el descuento propio de la posibilidad ya puede ser aplicado
+                posibilidades.append(posibilidad) #Agrega la posibilidad a la lista de posibilidades
+            self.generar_posibilidades(posibilidad, ofertas - ofertas_usadas())
 ```
   
 # Criterios de Riesgo y Selección de Ofertentes
