@@ -83,7 +83,7 @@ def generar_posibilidades(posibilidad, ofertas):
             generar_posibilidades(posibilidad, ofertas - ofertas_usadas()) #Llamado recursivo con todas las ofertas menos las usadas
 ```
 
-### 2.3 Generación de Combinaciones por Entidad
+### 2.3 Generación de Combinaciones
   - Una vez alcanzada esta estapa, ya se conocen todas las Posibilidades de Oferta de cada Entidad y si dicha Posibilidad cuenta con un descuento o no. Lo que sige, es tomar todas esas Posibilidades y combinarlas entre si formando la Combinaciones finalmente buscadas. Tanto las Posibilidades como las Combinaciones son combinaciones en si, el motivo por el que se llaman distinto, es para poder diferenciar de que tipo de Combinación se está hablando. Si se habla de Posibilidad se estará hablando del una combinación de Ofertas que una determinada Entidad puede realizar. Y cuando se habla de una Combinación, se estará haciendo referencia a una combinación de Posibilidades, es decir, a una combinación de combinaciones (Que es la que finalmente refleja lo que se desea, poder determinar a que Entidad adjudicarle que lote y si correspondería el descuento o no). 
   
 Estas Combinaciones se generan de forma muy similar a las Posibilidades, o sea, con un algoritmo recursivo encargado de generar todos los escenarios posibles. 
