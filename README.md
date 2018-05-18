@@ -84,7 +84,7 @@ def generar_posibilidades(posibilidad, ofertas):
 ```
 
 ### 2.3 Generación de Combinaciones
-  - Una vez alcanzada esta estapa, ya se conocen todas las Posibilidades de Oferta de cada Entidad y si dicha Posibilidad cuenta con un descuento o no. Lo que sige, es tomar todas esas Posibilidades y combinarlas entre si formando la Combinaciones finalmente buscadas. Tanto las Posibilidades como las Combinaciones son combinaciones en si, el motivo por el que se llaman distinto, es para poder diferenciar de que tipo de Combinación se está hablando. Si se habla de Posibilidad se estará hablando del una combinación de Ofertas que una determinada Entidad puede realizar. Y cuando se habla de una Combinación, se estará haciendo referencia a una combinación de Posibilidades, es decir, a una combinación de combinaciones (Que es la que finalmente refleja lo que se desea, poder determinar a que Entidad adjudicarle que lote y si correspondería el descuento o no). 
+  - Una vez alcanzada esta estapa, ya se conocen todas las Posibilidades de Oferta de cada Entidad y si dicha Posibilidad cuenta con un descuento o no. Lo que sige, es tomar todas esas Posibilidades y combinarlas entre si formando la Combinaciones finalmente buscadas. Tanto las Posibilidades como las Combinaciones son combinaciones propiamente dichas. El motivo por el que se llaman distinto, es para poder diferenciar de que tipo de combinación se está hablando. Si se habla de una Posibilidad, se habla de una combinación de Ofertas que una determinada Entidad puede realizar. Y cuando se habla de una Combinación, se hace referencia a una combinación de Posibilidades, es decir, a una combinación de combinaciones (Que es la que finalmente refleja lo que se desea, poder determinar a que Entidad adjudicarle que lote y si correspondería el descuento o no). 
   
 Estas Combinaciones se generan de forma muy similar a las Posibilidades, o sea, con un algoritmo recursivo encargado de generar todos los escenarios posibles. 
 A continuación se muestra un pseudocódigo utilizado para generar dichas Combinaciones:
@@ -108,6 +108,21 @@ def generar_combinaciones(combinacion, entidades):
                 if not combinacion.esta_completa(lotes): #Si la combinacion todavía tiene lotes sin ofertar
                     generar_combinaciones(combinacion, entidades - entidades_usadas) #Llamado recursivo con todas las entidades menos las usadas
 ```
+
+## 3. Determinación del ganador y muestra de datos
+Hemos llegado a la etapa final del proceso. Aquí nos encontramos con todas las posibles Combinaciones ya generadas y contamos con la información sobre los descuentos aplicados a cada una. Sólo nos resta determinar la mejor, en otras palabras, determinar las Entidades ganadoras y determinar que Lotes se les adjudicaron a cada una. Esto se lleva a cabo en tres mini-pasos más
+
+#### 3.1 Reducción de Combinaciones
+  - Como lo que se busca es saber de todas las posibles Combinaciones cuál es la ganadora, es necesario primero calcularlas todas. Suena lógico y hasta obvio pero no lo es tanto, ya que primero calcular todas implica por ejemplo tener Combinaciones donde solo se le adjudique un Lote a una Entidad, o donde se le adjudique solo ese mismo Lote a otra Entidad, o a otra.. Lo mismo con todos los lotes y todas las Entidades. Y de igual forma para un solo Lote, para dos Lotes, para tres Lotes, para los n Lotes. Entonces nos encontramos con una lista de combinaciones realmente muy grande, estamos hablando de combinaciones de combinaciones en donde los número crecen rápidamente (para más info consultar la sección de [Matematizando un poco las cosas]()). Para poder hacer los cálculos más rápido es necesario, entonces, reducir la lista de Combinaciones según algún criterio. El criterio que se utiliza es dejar vivas sólo las Combinaciones máximas. Una Combinación es máxima cuando no hay otra Combinación que tenga más Lotes adjudicados que esta. Osea, nos quedaremos con las Combinaciones que tengan la mayor cantidad de Lotes adjudicados descartando todas las demás. Ésto nos reducirá en gran medida la cantidad de Combinaciones y acelerará los cálculos finales.
+
+#### 3.2 Ordenamiento de Combinaciones
+  - Cómo el nombre lo dice, se refiere a aplicarle un orden a la lista de Combinaciones ya reducida. Ésto se realiza en memoria por lo que el paso de reducción es fundamental. El orden será descendente y se tendrá en cuenta el valor final de la Combinación calculada como la suma de todas las ofertas que la continene menos los descuentos aplicados.
+
+#### 3.3 Determinación del Ganador
+  - Una vez que la lista se encuentra ordenada se determina al ganador obteniendo el primer
+
+#### 3.3 Muestra de Datos
+  - Llegamos por fin al paso final en el que se mostrará 
 
 ## Criterios de Riesgo y Selección de Oferentes
 
