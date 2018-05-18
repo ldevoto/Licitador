@@ -124,7 +124,7 @@ Llegado a la etapa final del proceso, nos encontramos con todas las posibles Com
 #### 3.4 Muestra de Datos
   - Llegamos por fin al último paso en el que se mostrarán los resultados finales de la licitación. Se presentará una pantalla mostrando la Combinación ganadora y otra mostrando todas las Combinaciones (Máximas) generadas. Aquí se puede obtener toda la información requerida en forma prolija e intuitiva. 
 
-Hasta aquí la explicación del funcionamiento del LicitaSoft. En adelante se mencionan diferentes aspectos de interés a quién quiera profundicar un poco más en el funcionamiento del mismo.
+Hasta aquí la explicación del funcionamiento del LicitaSoft. En adelante se mencionan diferentes aspectos de interés a quién quiera profundizar un poco más en el funcionamiento del mismo.
 
 ## Criterios de Riesgo y Selección de Oferentes
 
