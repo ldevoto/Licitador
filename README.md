@@ -127,7 +127,38 @@ Llegado a la etapa final del proceso, nos encontramos con todas las posibles Com
 Hasta aquí la explicación del funcionamiento del LicitaSoft. En adelante se mencionan diferentes aspectos de interés a quién quiera profundizar un poco más en el funcionamiento del mismo.
 
 ## Análisis de Riesgo y Criterio de Selección de Oferentes
-  - 
+Un problema que debe solucionar el LicitaSoft es la generación de todas las posibles Combinaciones de Ofertas y la determinación de la Combinación ganadora. Ahora, el software no solo se programó para eso, sino que también posee cierta inteligencia para determinar el grado de riesgo de las Combinaciones y descartar las de riego más alto. Para eso se definieron criterios de selección que deben cumplir las Entidades participantes. Dichos criterios se detallan a continuación:
+  - [x] Para adjudicarle _n_ Lotes a una Entidad, ésta debe contar con al menos _n+1_ contratos concretados anteriormente.
+  - [x] Para adjudicarle _n_ Lotes a una Entidad, ésta debe contar con una [experiencia](#) mayor o igual a la [experiencia requerida](#) por los Lotes. 
+  - [x] Para adjudicarle _n_ Lotes a una Entidad, ésta debe
+    - si es una Empresa, contar con [recursos financieros](#) mayores o iguales a los [recursos financieros requeridos](#) por los lotes.
+    - si es una Asociación, contar con [recursos financieros](#) mayores o iguales a los [recursos financieros requeridos](#) por los lotes. Además cada Socio debe contar con, al menos, el 25% de los [recursos financieros requeridos](#) por los Lotes. Y por lo menos un socio debe contar con, al menos, el 40% de los [recursos financieros requeridos](#) por los Lotes.
+  - [x] Para adjudicarle _n_ Lotes a una Entidad, ésta debe
+    - si es una Empresa, contar con una [facturación media anual](#) mayor o igual a la [facturación media anual requerida](#) por los lotes.
+    - si es una Asociación, contar con una [facturación media anual](#) mayor o igual a la [facturación media anual requerida](#) por los lotes. Además, cada Socio debe contar con, al menos, el 20% de la [facturación media anual requerida](#) por los Lotes, pudiendo sólo un Socio no cumplir con este criterio pero debiendo cumplir con, al menos, el 15% de la misma. Y por lo menos un Socio debe contar con, al menos, el 40% de la [facturación media anual](#) por los Lotes.
+  
+#### Atributos de una Entidad
+##### Experiencia
+La experiencia de una Enitdad-Empresa se calcula como la suma del valor de los mayores _n+1_ contratos donde _n_ es la cantidad de Lotes adjudicados. 
+La experiencia de una Entidad-Asociación se calcula como la suma del valor de los mayores _n+1_ contratos de todos los Socios que la componen, donde _n_ es la cantidad de Lotes adjudicados.
+
+##### Facturación Media Anual
+La facturación media anual de una Entidad-Empresa es un dato que se ingresa en la primera etapa del proceso
+La facturación media anual de una Entidad-Asociación se calcula como la suma de la facturación media anual de todos los Socios que la componen.
+
+##### Recursos Financieros 
+Los recursos financieros de una Entidad-Empresa es un dato que se ingresa en la primera etapa del proceso
+Los recursos financieros de una Entidad-Asociación se calculan como la suma de los recursos financieros de todos los Socios que la componen.
+
+#### Atributos de una Posibilidad
+##### Experiencia Requerida
+La experiencia requerida se calcula como la suma de la experiencia requerida de los _n_ Lotes adjudicados.
+
+##### Facturación Media Anual Requerida
+La facturación media anual requerida se calcula como la suma de la facturación media anual requerida de los _n_ Lotes adjudicados.
+
+##### Recursos Financieros Requeridos
+Los recursos financieros requeridos se calcula como la suma de los recursos financieros requeridos de los _n_ Lotes adjudicados.
 
 ## Ejemplo Práctico
 
