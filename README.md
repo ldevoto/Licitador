@@ -143,11 +143,11 @@ La experiencia de una Enitdad-Empresa se calcula como la suma del valor de los m
 La experiencia de una Entidad-Asociación se calcula como la suma del valor de los mayores _n+1_ contratos de todos los Socios que la componen, donde _n_ es la cantidad de Lotes adjudicados.
 
 ##### Facturación Media Anual
-La facturación media anual de una Entidad-Empresa es un dato que se ingresa en la primera etapa del proceso
+La facturación media anual de una Entidad-Empresa es un dato que se ingresa en la primera etapa del proceso.
 La facturación media anual de una Entidad-Asociación se calcula como la suma de la facturación media anual de todos los Socios que la componen.
 
 ##### Recursos Financieros 
-Los recursos financieros de una Entidad-Empresa es un dato que se ingresa en la primera etapa del proceso
+Los recursos financieros de una Entidad-Empresa es un dato que se ingresa en la primera etapa del proceso.
 Los recursos financieros de una Entidad-Asociación se calculan como la suma de los recursos financieros de todos los Socios que la componen.
 
 #### Atributos de una Posibilidad
