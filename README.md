@@ -126,6 +126,8 @@ Llegado a la etapa final del proceso, nos encontramos con todas las posibles Com
 
 Hasta aquí la explicación del funcionamiento del LicitaSoft. En adelante se mencionan diferentes aspectos de interés a quién quiera profundizar un poco más en el funcionamiento del mismo.
 
+***
+
 ## Análisis de Riesgo y Criterio de Selección de Oferentes
 Un problema que debe solucionar el LicitaSoft es la generación de todas las posibles Combinaciones de Ofertas y la determinación de la Combinación ganadora. Ahora, el software no solo se programó para eso, sino que también posee cierta inteligencia para determinar el grado de riesgo de las Combinaciones y descartar las de riego más alto. Para eso se definieron criterios de selección que deben cumplir las Entidades participantes. Dichos criterios se detallan a continuación:
   - [x] Para adjudicarle _n_ Lotes a una Entidad, ésta debe contar con al menos _n+1_ contratos concretados anteriormente.
@@ -160,6 +162,10 @@ La facturación media anual requerida se calcula como la suma de la facturación
 ##### Recursos Financieros Requeridos
 Los recursos financieros requeridos se calcula como la suma de los recursos financieros requeridos de los _n_ Lotes adjudicados.
 
+***
+
 ## Ejemplo Práctico
+
+***
 
 ## Matematizando un poco las cosas
